@@ -88,13 +88,3 @@ Resultado Tarea = 68.9%
 ```
 
 El aumento de recall se logró reduciendo `coverage_ratio` y `score_threshold` gracias al gating con la curva; la precisión se mantuvo aceptable pese a los falsos positivos, aunque aún hay margen para reducir `dp` (duplicadas) con estrategias como `min_gap` específico por comercial o ajustes de start_time más precisos.
-
-## 6. Pendientes / ideas futuras
-
-- Normalizar las curvas (`combined_activity` → z-score) para que `--curve_threshold` tenga un significado consistente.  
-- Ajustar `coverage_ratio` y `min_frames` de forma adaptativa según duración del comercial (corto vs largo).  
-- Refinar `start_time` usando el promedio de desfases de cada pista para aumentar el IoU y convertir detecciones “casi correctas” en verdaderos positivos.  
-- Emplear deduplicación más inteligente: fusionar detecciones de la misma marca con inicios separados <5 s conservando la de mayor score.  
-- Documentar y versionar cada configuración para facilitar comparaciones.
-
-Con esto tienes un resumen de las etapas implementadas y los comandos necesarios para reproducir el proceso completo. Ajusta y extiende según los experimentos futuros.
