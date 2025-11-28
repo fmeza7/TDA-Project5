@@ -1,0 +1,53 @@
+# television	inicio_seg	largo_seg	comercial	score
+mega-2014_04_10	112.346	16.25	falabella connect	0.9079
+mega-2014_04_10	539.005	16.25	falabella connect	0.8553
+mega-2014_04_10	917.984	16.25	falabella connect	0.7851
+mega-2014_04_10	1079.345	16.25	falabella connect	0.8263
+mega-2014_04_10	1312.344	30.03	colgate total12	0.6862
+mega-2014_04_10	1452.985	16.25	falabella connect	0.7237
+mega-2014_04_10	2037.669	16.25	falabella connect	0.7388
+mega-2014_04_10	2156.655	21.521	omo1	0.7764
+mega-2014_04_10	2514.679	25.092	scotiabank	0.7201
+mega-2014_04_10	3444.341	16.25	falabella connect	0.7401
+mega-2014_04_11	186.987	16.25	falabella connect	0.6594
+mega-2014_04_11	575.675	25.092	scotiabank	0.6717
+mega-2014_04_11	1398.33	30.964	samsung	0.7215
+mega-2014_04_11	2097.662	31.532	soprole panacota	0.6829
+mega-2014_04_11	2837.668	16.25	falabella connect	0.7685
+mega-2014_04_11	3257.988	21.521	omo1	0.7039
+mega-2014_04_11	3511.341	21.521	omo1	0.7086
+mega-2014_04_11	3585.348	15.048	dove desodorante hombre	0.8707
+mega-2014_04_16	304.004	30.464	colgate sensitive	0.6595
+mega-2014_04_16	1020.319	30.964	samsung	0.7424
+mega-2014_04_16	1852.984	16.25	falabella connect	0.731
+mega-2014_04_16	2012.677	16.25	falabella connect	0.7532
+mega-2014_04_16	2998.662	16.25	falabella connect	0.6609
+mega-2014_04_16	3038.335	16.25	falabella connect	0.6951
+mega-2014_04_16	3476.006	16.25	falabella connect	0.7762
+mega-2014_04_17	596.329	16.25	falabella connect	0.6597
+mega-2014_04_17	860.326	16.25	falabella connect	0.7804
+mega-2014_04_17	1120.987	16.25	falabella connect	0.8051
+mega-2014_04_17	1199.665	31.532	soprole panacota	0.7944
+mega-2014_04_17	1487.653	16.25	falabella connect	0.6595
+mega-2014_04_17	1627.326	16.25	falabella connect	0.74
+mega-2014_04_17	1818.016	16.25	falabella connect	0.8356
+mega-2014_04_17	2851.682	30.03	dove pelo	0.661
+mega-2014_04_17	3126.323	16.25	falabella connect	0.6565
+mega-2014_04_23	29.329	16.25	falabella connect	0.679
+mega-2014_04_23	67.334	21.521	omo1	0.6589
+mega-2014_04_23	163.33	16.25	falabella connect	0.702
+mega-2014_04_23	333.667	21.521	omo1	0.7208
+mega-2014_04_23	398.999	16.25	falabella connect	0.8026
+mega-2014_04_23	608.007	16.25	falabella connect	0.7232
+mega-2014_04_23	853.319	31.532	soprole panacota	0.6512
+mega-2014_04_23	1519.985	16.25	falabella connect	0.8264
+mega-2014_04_23	2177.676	16.25	falabella connect	0.6708
+mega-2014_04_23	2247.011	16.25	falabella connect	0.8404
+mega-2014_04_23	2379.677	16.25	falabella connect	0.6946
+mega-2014_04_23	2463.661	16.25	falabella connect	0.653
+mega-2014_04_23	2487.318	16.25	falabella connect	0.8095
+mega-2014_04_23	2666.998	30.964	samsung	0.6578
+mega-2014_04_23	2971.001	16.25	falabella connect	0.7427
+mega-2014_04_25	300.0	16.25	falabella connect	0.6594
+mega-2014_04_25	1259.325	16.25	falabella connect	0.6735
+mega-2014_04_25	1328.661	16.25	falabella connect	0.6525

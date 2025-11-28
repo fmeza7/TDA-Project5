@@ -1,0 +1,103 @@
+mega-2014_04_10	250	31.4	mall plaza (2)
+mega-2014_04_10	297.4	25.1	scotiabank
+mega-2014_04_10	367.6	31.4	vtr
+mega-2014_04_10	434.2	16	falabella connect
+mega-2014_04_10	950.2	25.1	scotiabank
+mega-2014_04_10	1475.3	25.1	scotiabank
+mega-2014_04_10	1584.1	25.1	scotiabank
+mega-2014_04_10	2109.2	31.6	cristal
+mega-2014_04_10	2640.8	21.4	omo1
+mega-2014_04_10	3162.2	31.6	cristal
+mega-2014_04_10	3304.8	31.4	ferreteria mts
+mega-2014_04_10	3336.6	16	falabella connect
+mega-2014_04_10	3352.8	15	dove desodorante hombre
+mega-2014_04_11	111	30	dfm motor
+mega-2014_04_11	157.4	19.2	pantene expert
+mega-2014_04_11	192.4	31.4	vtr
+mega-2014_04_11	238.8	25.1	scotiabank
+mega-2014_04_11	485.9	25.1	scotiabank
+mega-2014_04_11	576.4	16	falabella connect
+mega-2014_04_11	618.8	31.4	mall plaza (2)
+mega-2014_04_11	872.2	30.8	samsung
+mega-2014_04_11	1006.8	25.1	scotiabank
+mega-2014_04_11	1253.9	31.4	ferreteria mts
+mega-2014_04_11	1409.5	31.4	vtr
+mega-2014_04_11	1662.9	31.4	vtr
+mega-2014_04_11	1710.6	31.4	ferreteria mts
+mega-2014_04_11	1778.5	31.6	cristal
+mega-2014_04_11	2032.1	31.5	limon soda
+mega-2014_04_11	2063.7	16	falabella connect
+mega-2014_04_11	2080.1	31.6	cristal
+mega-2014_04_11	2309.9	30.8	samsung
+mega-2014_04_11	2432.1	31.4	mall plaza (2)
+mega-2014_04_11	2685.5	31.5	limon soda
+mega-2014_04_11	2794.5	19.2	pantene expert
+mega-2014_04_11	2934.7	31.4	mall plaza (2)
+mega-2014_04_11	2982.3	30.8	samsung
+mega-2014_04_11	3013.3	30	presto
+mega-2014_04_11	3265.3	31.4	vtr
+mega-2014_04_11	3325.7	31.6	cristal
+mega-2014_04_11	3464.5	31.5	limon soda
+mega-2014_04_11	3496.1	30	dove pelo
+mega-2014_04_16	350	31.4	soprole panacota
+mega-2014_04_16	402.2	29.7	colgate total12
+mega-2014_04_16	432.4	20.4	mall plaza
+mega-2014_04_16	1152.8	31.4	mr big (2)
+mega-2014_04_16	1251.8	31.4	ballerina
+mega-2014_04_16	1356.2	20.4	mall plaza
+mega-2014_04_16	1422.4	31.4	soprole panacota
+mega-2014_04_16	1453.8	30	presto
+mega-2014_04_16	2183.8	30.3	colgate sensitive
+mega-2014_04_16	2263.8	30	presto
+mega-2014_04_16	2316	30.3	colgate sensitive
+mega-2014_04_16	2346.6	21.4	omo1
+mega-2014_04_16	2415.2	30	dove pelo
+mega-2014_04_16	3145.2	20.4	mall plaza
+mega-2014_04_16	3232.6	25.1	scotiabank
+mega-2014_04_17	480	20.4	mall plaza
+mega-2014_04_17	652.4	31.4	ballerina
+mega-2014_04_17	1643.8	30	presto
+mega-2014_04_17	1721.6	31.4	vtr
+mega-2014_04_17	1753.1	30	dove pelo
+mega-2014_04_17	1783.2	31.4	soprole panacota
+mega-2014_04_17	1814.8	30.3	colgate sensitive
+mega-2014_04_17	1882.6	30.3	colgate sensitive
+mega-2014_04_17	1913.3	31.4	ballerina
+mega-2014_04_17	2904.7	31.4	mr big (2)
+mega-2014_04_17	3155.7	20.4	mall plaza
+mega-2014_04_23	450.4	29.7	colgate total12
+mega-2014_04_23	556.4	30.3	colgate sensitive
+mega-2014_04_23	586.8	30	presto
+mega-2014_04_23	617.1	21.4	omo1
+mega-2014_04_23	638.8	31.4	soprole panacota
+mega-2014_04_23	670.3	31.4	mall plaza (2)
+mega-2014_04_23	713.8	29.7	colgate total12
+mega-2014_04_23	825.8	31.4	ballerina
+mega-2014_04_23	1757.2	31.4	mr big (2)
+mega-2014_04_23	1788.9	32.2	petrobras pantuflas mundialeras
+mega-2014_04_23	1851.1	30.3	colgate sensitive
+mega-2014_04_23	1932.1	30.3	colgate sensitive
+mega-2014_04_23	1998.5	30	dove pelo
+mega-2014_04_23	2076.1	32.2	petrobras pantuflas mundialeras
+mega-2014_04_23	3008.3	30	dfm motor
+mega-2014_04_23	3148.3	31.4	mall plaza (2)
+mega-2014_04_25	145	30	dfm motor
+mega-2014_04_25	186.2	25.1	scotiabank
+mega-2014_04_25	466.6	25.1	scotiabank
+mega-2014_04_25	554.4	30.8	samsung
+mega-2014_04_25	874.7	30	presto
+mega-2014_04_25	1195.2	31.5	limon soda
+mega-2014_04_25	1273.2	15	dove desodorante hombre
+mega-2014_04_25	1578.5	31.4	mr big (2)
+mega-2014_04_25	1737.7	31.5	limon soda
+mega-2014_04_25	1914.2	31.4	ferreteria mts
+mega-2014_04_25	2236.1	31.4	mr big (2)
+mega-2014_04_25	2318.7	31.4	mall plaza (2)
+mega-2014_04_25	2396.1	21.4	omo1
+mega-2014_04_25	2417.9	30.8	samsung
+mega-2014_04_25	2542.9	32.2	petrobras pantuflas mundialeras
+mega-2014_04_25	2865.1	31.6	cristal
+mega-2014_04_25	2912.5	31.5	limon soda
+mega-2014_04_25	3234	15	dove desodorante hombre
+mega-2014_04_25	3249.1	31.5	limon soda
+mega-2014_04_25	3362.9	19.2	pantene expert

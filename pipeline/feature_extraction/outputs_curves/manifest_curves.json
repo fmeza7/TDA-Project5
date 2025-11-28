@@ -1,0 +1,164 @@
+[
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_10.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_10_curves.npz",
+    "frames": 10765
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_11.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_11_curves.npz",
+    "frames": 10801
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_16.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_16_curves.npz",
+    "frames": 10534
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_17.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_17_curves.npz",
+    "frames": 10800
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_23.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_23_curves.npz",
+    "frames": 10801
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/preprocessing/outputs_cubical/tv/mega-2014_04_25.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/tv/mega-2014_04_25_curves.npz",
+    "frames": 10802
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/ballerina.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/ballerina_curves.npz",
+    "frames": 94
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/colgate sensitive.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/colgate sensitive_curves.npz",
+    "frames": 91
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/colgate total12.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/colgate total12_curves.npz",
+    "frames": 90
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/cristal.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/cristal_curves.npz",
+    "frames": 94
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/dfm motor.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/dfm motor_curves.npz",
+    "frames": 90
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/dove desodorante hombre.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/dove desodorante hombre_curves.npz",
+    "frames": 45
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/dove pelo.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/dove pelo_curves.npz",
+    "frames": 90
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/falabella connect.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/falabella connect_curves.npz",
+    "frames": 48
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/ferreteria mts.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/ferreteria mts_curves.npz",
+    "frames": 95
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/limon soda.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/limon soda_curves.npz",
+    "frames": 95
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/mall plaza (2).npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/mall plaza (2)_curves.npz",
+    "frames": 94
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/mall plaza.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/mall plaza_curves.npz",
+    "frames": 62
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/mr big (2).npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/mr big (2)_curves.npz",
+    "frames": 94
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/omo1.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/omo1_curves.npz",
+    "frames": 64
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/pantene expert.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/pantene expert_curves.npz",
+    "frames": 60
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/petrobras pantuflas mundialeras.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/petrobras pantuflas mundialeras_curves.npz",
+    "frames": 96
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/presto.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/presto_curves.npz",
+    "frames": 90
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/samsung.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/samsung_curves.npz",
+    "frames": 92
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/scotiabank.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/scotiabank_curves.npz",
+    "frames": 75
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/soprole panacota.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/soprole panacota_curves.npz",
+    "frames": 94
+  },
+  {
+    "category": "commercials",
+    "source_path": "pipeline/preprocessing/outputs_cubical/commercials/vtr.npz",
+    "output_path": "pipeline/feature_extraction/outputs_curves/commercials/vtr_curves.npz",
+    "frames": 95
+  }
+]

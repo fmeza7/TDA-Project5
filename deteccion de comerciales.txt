@@ -1,0 +1,58 @@
+Proyecto Detección de Comerciales
+
+EL objetivo de este proyecto es implementar un buscador de avisos comerciales en televisión utilizando TDA. Dado un video con la emisión de un canal de televisión y un conjunto de videos con diferentes comerciales, cada uno del largo entre 15 y 40 segundos, debe implementar un programa que reporte las apariciones de los comerciales dentro del video de televisión.
+
+Especificamente, su programa debe recibit como parámetro el nombre del video de televisión que se desea procesar y el nombre de la carpeta donde se encuentran los comerciales a buscar. Por ejemplo, un posible comando es:
+
+python myprogram.py television.mp4 comerciales/
+
+Luego de varias etapas su sistema debe generar un archivo de nombre detecciones.txt con todas las apariciones de los comerciales en el video de televisión. EL archivo de salida debe tener formato de cuatro columnas separadas por un tabulador '\t', cada aparición en una línea siguiendo el siguiente formato:
+
+video_television \t segundos_inicio \t segundos_largo \t video_comercial
+
+Un posible archivo de salida es el siguiente:
+
+television.mp4	87.3	30.1	comerciales/colgate.mp4
+television.mp4	637.1	15.6	comerciales/sedal.mp4
+television.mp4	1892.8	25.9	comerciales/banco.mp4
+television.mp4	2087.5	30.1	comerciales/colgate.mp4
+
+Su proyecto debe reportar la mayor cantidad de comerciales emitidos, con la mejor exactitud posible de los tiempos de inicio y largo, junto con la menor cantidad de detecciones incorrectas. 
+
+Además, dispondrá de un archivo de nombre gt.txt con la respuesta correcta para cada video de televisión y de ubn programa evaluar.py que calcula la cantidad de respuestas correctas en el archivo detecciones.txt (de ahi la importancia de respetar el formato de salida) generado por su programa.
+
+Puede comprobar cada aparición usando VLC con el comando:
+
+vlc "television.mp4" --start-time=[segundo_inicio] --run-time=[segundos_largo]
+
+Se recomienda dividir el proyecto en tres etapas:
+
+1. Extracción de características: Selecciona cuadros de cada video a una
+tasa constante (por ejemplo, tres cuadros por segundo) y para cada cuadro
+calcula un vector que representa su contenido visual. El conjunto de
+descriptores para cada video los puede mantener en memoria o guardar en
+uno o más archivos con el formato que estime conveniente.
+
+2. Búsqueda por similitud: Carga en memoria los descriptores del video de
+televisión (conjunto Q) y los descriptores de todos los videos de comerciales
+(conjunto R). Luego determina para cada descriptor q de Q los k descriptores
+más cercanos en el conjunto R (con k≥1) de acuerdo a alguna función de
+distancia. El resultado de esta búsqueda (los k cuadros de R más parecidos
+a cada cuadro de Q) lo puede mantener en memoria o guardar en uno o más
+archivos con el formato que estime conveniente.
+
+2.1 Tambien puede generar una curva topologica con el conjunto Q. Dado que todo 
+video es en realidad una secuencia de imágenes, la diferencia entre frame a frame no debe 
+ser tan significativa, a menos que se trate de una anomalía (comercial). Al detectar 
+la anomalía se verifica de qué comercial se trata usando los k comerciales mas cercanos.
+
+3. Detección de apariciones: Carga en memoria la lista de cuadros similares
+para cada cuadro del video de televisión. Luego, revisa las listas
+correspondientes a cuadros consecutivos del video de televisión y localiza
+secuencias provenientes de un mismo comercial con el mismo desfase de
+tiempo. Se debe notar que se buscan apariciones completas de cada
+comercial y no apariciones parciales.
+
+
+
+

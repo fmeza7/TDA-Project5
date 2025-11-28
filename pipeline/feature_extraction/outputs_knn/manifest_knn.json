@@ -1,0 +1,26 @@
+[
+  {
+    "tv_video": "mega-2014_04_10",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_10_knn.npz"
+  },
+  {
+    "tv_video": "mega-2014_04_11",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_11_knn.npz"
+  },
+  {
+    "tv_video": "mega-2014_04_16",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_16_knn.npz"
+  },
+  {
+    "tv_video": "mega-2014_04_17",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_17_knn.npz"
+  },
+  {
+    "tv_video": "mega-2014_04_23",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_23_knn.npz"
+  },
+  {
+    "tv_video": "mega-2014_04_25",
+    "output": "pipeline/feature_extraction/outputs_knn/tv/mega-2014_04_25_knn.npz"
+  }
+]
