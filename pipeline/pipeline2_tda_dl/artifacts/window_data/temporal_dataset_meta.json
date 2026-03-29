@@ -1,0 +1,6 @@
+{
+  "num_windows": 56710,
+  "mode": "temporal",
+  "window_sec": 8.0,
+  "stride_frames": 1
+}

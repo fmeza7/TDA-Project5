@@ -1,0 +1,10 @@
+seq_len: 9
+batch_size: 64
+lr: 0.0001
+epochs: 50
+weight_decay: 0.0
+dropout: 0.1
+merge_gap_sec: 2.0
+min_segment_sec: 3.0
+dedup_gap_sec: 5.0
+score_threshold: 0.6
