@@ -1,0 +1,16 @@
+[
+  "h0_count",
+  "h0_sum_persistence",
+  "h0_max_persistence",
+  "h0_std_persistence",
+  "h1_count",
+  "h1_sum_persistence",
+  "h1_max_persistence",
+  "h1_std_persistence",
+  "embedding_energy_mean",
+  "embedding_energy_std",
+  "embedding_energy_delta",
+  "window_motion",
+  "combined_activity",
+  "combined_activity_delta"
+]

@@ -2,163 +2,163 @@
   {
     "video_name": "mega-2014_04_10",
     "category": "tv",
-    "num_points": 10744,
+    "num_points": 10747,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_10_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mega-2014_04_11",
     "category": "tv",
-    "num_points": 10780,
+    "num_points": 10783,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_11_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mega-2014_04_16",
     "category": "tv",
-    "num_points": 10513,
+    "num_points": 10516,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_16_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mega-2014_04_17",
     "category": "tv",
-    "num_points": 10779,
+    "num_points": 10782,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_17_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mega-2014_04_23",
     "category": "tv",
-    "num_points": 10780,
+    "num_points": 10783,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_23_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mega-2014_04_25",
     "category": "tv",
-    "num_points": 10781,
+    "num_points": 10784,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/tv/mega-2014_04_25_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "ballerina",
     "category": "commercials",
-    "num_points": 84,
+    "num_points": 87,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/ballerina_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "colgate sensitive",
     "category": "commercials",
-    "num_points": 81,
+    "num_points": 84,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/colgate sensitive_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "colgate total12",
     "category": "commercials",
-    "num_points": 80,
+    "num_points": 83,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/colgate total12_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "cristal",
     "category": "commercials",
-    "num_points": 84,
+    "num_points": 87,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/cristal_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "dfm motor",
     "category": "commercials",
-    "num_points": 80,
+    "num_points": 83,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/dfm motor_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "dove desodorante hombre",
     "category": "commercials",
-    "num_points": 35,
+    "num_points": 38,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/dove desodorante hombre_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "dove pelo",
     "category": "commercials",
-    "num_points": 80,
+    "num_points": 83,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/dove pelo_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "falabella connect",
     "category": "commercials",
-    "num_points": 38,
+    "num_points": 41,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/falabella connect_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "ferreteria mts",
     "category": "commercials",
-    "num_points": 85,
+    "num_points": 88,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/ferreteria mts_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "limon soda",
     "category": "commercials",
-    "num_points": 85,
+    "num_points": 88,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/limon soda_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mall plaza (2)",
     "category": "commercials",
-    "num_points": 84,
+    "num_points": 87,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/mall plaza (2)_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mall plaza",
     "category": "commercials",
-    "num_points": 52,
+    "num_points": 55,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/mall plaza_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "mr big (2)",
     "category": "commercials",
-    "num_points": 84,
+    "num_points": 87,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/mr big (2)_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "omo1",
     "category": "commercials",
-    "num_points": 54,
+    "num_points": 57,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/omo1_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "pantene expert",
     "category": "commercials",
-    "num_points": 50,
+    "num_points": 53,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/pantene expert_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "petrobras pantuflas mundialeras",
     "category": "commercials",
-    "num_points": 86,
+    "num_points": 89,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/petrobras pantuflas mundialeras_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "presto",
     "category": "commercials",
-    "num_points": 80,
+    "num_points": 83,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/presto_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "samsung",
     "category": "commercials",
-    "num_points": 82,
+    "num_points": 85,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/samsung_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "scotiabank",
     "category": "commercials",
-    "num_points": 65,
+    "num_points": 68,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/scotiabank_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "soprole panacota",
     "category": "commercials",
-    "num_points": 84,
+    "num_points": 87,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/soprole panacota_embeddings_embedding_tda_curves.npz"
   },
   {
     "video_name": "vtr",
     "category": "commercials",
-    "num_points": 85,
+    "num_points": 88,
     "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_curves/commercials/vtr_embeddings_embedding_tda_curves.npz"
   }
 ]
