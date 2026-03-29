@@ -51,12 +51,16 @@ def main() -> None:
     config_path = args.temporal_model_dir / "temporal_config.json"
     config = json.loads(config_path.read_text()) if config_path.exists() else {}
     seq_len = int(config.get("seq_len", 9))
+    print(f"[infer] using seq_len={seq_len}")
 
     device = resolve_device()
     print(f"Using device: {device}")
 
     class_map = _load_class_map(args.temporal_model_dir / "class_map.json")
-    model_ckpt = torch.load(args.temporal_model_dir / "temporal_best.pt", map_location="cpu")
+    ckpt_path = args.temporal_model_dir / "temporal_best.pt"
+    if not ckpt_path.exists():
+        raise RuntimeError(f"No existe checkpoint temporal: {ckpt_path}")
+    model_ckpt = torch.load(ckpt_path, map_location="cpu")
     first_file = next((args.latents_dir / "tv").glob("*_latents.npz"), None)
     if first_file is None:
         raise RuntimeError("No se encontraron latentes de TV; ejecute export_latents primero")
@@ -102,10 +106,12 @@ def main() -> None:
                     "start": float(start_times[mid]),
                 }
             )
+        print(f"[infer] {video_name}: raw positive windows={len(preds)}")
         if not preds:
             continue
         preds.sort(key=lambda x: x["center"])
         group: List[Dict] = []
+        video_detections: List[Detection] = []
         for item in preds:
             if not group:
                 group.append(item)
@@ -114,10 +120,12 @@ def main() -> None:
             if item["commercial"] == last["commercial"] and item["center"] - last["center"] <= args.merge_gap_sec:
                 group.append(item)
             else:
-                detections.append(_group_to_detection(group, durations, args.window_sec))
+                video_detections.append(_group_to_detection(group, durations, args.window_sec))
                 group = [item]
         if group:
-            detections.append(_group_to_detection(group, durations, args.window_sec))
+            video_detections.append(_group_to_detection(group, durations, args.window_sec))
+        detections.extend(video_detections)
+        print(f"[infer] {video_name}: detections emitidas={len(video_detections)}")
 
     detections = merge_adjacent(detections, args.merge_gap_sec)
     detections = filter_short(detections, args.min_segment_sec)

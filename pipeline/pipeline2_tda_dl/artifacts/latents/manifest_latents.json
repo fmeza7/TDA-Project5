@@ -1,108 +1,108 @@
 [
   {
     "video_name": "limon soda",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/limon soda_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/limon soda_latents.npz"
   },
   {
     "video_name": "vtr",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/vtr_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/vtr_latents.npz"
   },
   {
     "video_name": "petrobras pantuflas mundialeras",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/petrobras pantuflas mundialeras_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/petrobras pantuflas mundialeras_latents.npz"
   },
   {
     "video_name": "colgate total12",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/colgate total12_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/colgate total12_latents.npz"
   },
   {
     "video_name": "scotiabank",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/scotiabank_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/scotiabank_latents.npz"
   },
   {
     "video_name": "mall plaza",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/mall plaza_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/mall plaza_latents.npz"
   },
   {
     "video_name": "mall plaza (2)",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/mall plaza (2)_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/mall plaza (2)_latents.npz"
   },
   {
     "video_name": "samsung",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/samsung_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/samsung_latents.npz"
   },
   {
     "video_name": "falabella connect",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/falabella connect_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/falabella connect_latents.npz"
   },
   {
     "video_name": "presto",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/presto_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/presto_latents.npz"
   },
   {
     "video_name": "mr big (2)",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/mr big (2)_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/mr big (2)_latents.npz"
   },
   {
     "video_name": "dove desodorante hombre",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/dove desodorante hombre_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/dove desodorante hombre_latents.npz"
   },
   {
     "video_name": "omo1",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/omo1_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/omo1_latents.npz"
   },
   {
     "video_name": "ferreteria mts",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/ferreteria mts_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/ferreteria mts_latents.npz"
   },
   {
     "video_name": "ballerina",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/ballerina_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/ballerina_latents.npz"
   },
   {
     "video_name": "dfm motor",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/dfm motor_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/dfm motor_latents.npz"
   },
   {
     "video_name": "cristal",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/cristal_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/cristal_latents.npz"
   },
   {
     "video_name": "dove pelo",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/dove pelo_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/dove pelo_latents.npz"
   },
   {
     "video_name": "colgate sensitive",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/colgate sensitive_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/colgate sensitive_latents.npz"
   },
   {
     "video_name": "soprole panacota",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/soprole panacota_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/soprole panacota_latents.npz"
   },
   {
     "video_name": "pantene expert",
-    "source_type": "commercial",
-    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercial/pantene expert_latents.npz"
+    "source_type": "commercials",
+    "path": "pipeline/pipeline2_tda_dl/artifacts/latents/commercials/pantene expert_latents.npz"
   },
   {
     "video_name": "mega-2014_04_16",

@@ -23,11 +23,10 @@ def resolve_device() -> torch.device:
     return torch.device("cpu")
 
 
-def _normalize_name(value) -> str:
+def _norm_name(value) -> str:
     if isinstance(value, bytes):
         value = value.decode("utf-8")
     value = str(value)
-    # remove extensions/suffixes
     stem = Path(value).stem
     for suffix in ("_curves", "_latents"):
         if stem.endswith(suffix):
@@ -41,13 +40,17 @@ def _select_indices(
     train_tv: Sequence[str],
     val_tv: Sequence[str],
 ) -> Tuple[np.ndarray, np.ndarray]:
+    video_names = np.array([_norm_name(x) for x in video_names])
+    source_types = np.array([_norm_name(x) for x in source_types])
+    train_tv = [_norm_name(x) for x in train_tv]
+    val_tv = [_norm_name(x) for x in val_tv]
     tv_mask = source_types == "tv"
     commercials_mask = source_types == "commercial"
     unique_tv = sorted(set(video_names[tv_mask]))
-    train_set = {_normalize_name(name) for name in train_tv if name} if train_tv else set()
+    train_set = {name for name in train_tv if name} if train_tv else set()
     if not train_set:
         train_set = set(unique_tv[: max(1, len(unique_tv) - 1)])
-    val_set = {_normalize_name(name) for name in val_tv if name} if val_tv else set(unique_tv) - train_set
+    val_set = {name for name in val_tv if name} if val_tv else set(unique_tv) - train_set
     if not val_set:
         val_candidates = [tv for tv in unique_tv if tv not in train_set]
         if val_candidates:
@@ -156,11 +159,12 @@ def main() -> None:
     X = data["X_flat"]
     raw_video_names = data["video_name"]
     raw_source_types = data["source_type"]
-    video_names = np.array([_normalize_name(name) for name in raw_video_names])
-    source_types = np.array([str(st) if not isinstance(st, bytes) else st.decode("utf-8") for st in raw_source_types])
+    train_idx, val_idx = _select_indices(raw_video_names, raw_source_types, args.train_tv, args.val_tv)
+    video_names = np.array([_norm_name(name) for name in raw_video_names])
+    source_types = np.array([_norm_name(st) for st in raw_source_types])
     print("train_topoae: unique video_names =", sorted(set(video_names)))
     print("train_topoae: unique source_types =", sorted(set(source_types)))
-    train_idx, val_idx = _select_indices(video_names, source_types, args.train_tv, args.val_tv)
+    print(f"[topoae] train_idx={len(train_idx)} val_idx={len(val_idx)}")
 
     mean = X[train_idx].mean(axis=0)
     std = X[train_idx].std(axis=0) + 1e-6
@@ -191,14 +195,7 @@ def main() -> None:
     )
 
     (output_dir / "train_history.json").write_text(json.dumps(history, indent=2))
-    config = {}
-    for k, v in vars(args).items():
-        if isinstance(v, Path):
-            config[k] = str(v)
-        elif isinstance(v, list):
-            config[k] = [str(item) for item in v]
-        else:
-            config[k] = v
+    config = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}
     (output_dir / "topoae_config.json").write_text(json.dumps(config, indent=2))
 
 

@@ -6,6 +6,14 @@
   "lr": 0.0001,
   "epochs": 50,
   "weight_decay": 0.0,
-  "train_tv": [],
-  "val_tv": []
+  "train_tv": [
+    "mega-2014_04_10",
+    "mega-2014_04_11",
+    "mega-2014_04_16",
+    "mega-2014_04_17"
+  ],
+  "val_tv": [
+    "mega-2014_04_23"
+  ],
+  "include_commercials": true
 }

@@ -5,7 +5,7 @@
   "lambda_topo": 0.5,
   "batch_size": 64,
   "lr": 0.001,
-  "epochs": 100,
+  "epochs": 1,
   "weight_decay": 0.0,
   "patience": 10,
   "train_tv": [

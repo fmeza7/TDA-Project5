@@ -24,7 +24,13 @@ class TemporalClassifier(nn.Module):
         super().__init__()
         self.input_proj = nn.Linear(latent_dim, d_model)
         self.pos_enc = PositionalEncoding(d_model, seq_len)
-        encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=4, dim_feedforward=256, dropout=0.1)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=4,
+            dim_feedforward=256,
+            dropout=0.1,
+            batch_first=True,
+        )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=2)
         self.head = nn.Sequential(
             nn.Linear(d_model, 128),
@@ -37,7 +43,6 @@ class TemporalClassifier(nn.Module):
         # seq: [B, T, latent_dim]
         x = self.input_proj(seq)
         x = self.pos_enc(x)
-        x = x.transpose(0, 1)  # [T, B, D]
-        x = self.encoder(x)
-        x = x.mean(dim=0)
+        x = self.encoder(x)  # [B, T, D]
+        x = x.mean(dim=1)
         return self.head(x)

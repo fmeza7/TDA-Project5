@@ -13,6 +13,15 @@ from tqdm import tqdm
 from .topoae_model import TopoAutoencoder
 
 
+def _norm_name(value) -> str:
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    value = str(value)
+    stem = Path(value).stem
+    stem = stem.replace("_curves", "").replace("_latents", "")
+    return stem
+
+
 def resolve_device() -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
@@ -44,14 +53,20 @@ def main() -> None:
 
     device = resolve_device()
     print(f"Using device: {device}")
-    model = TopoAutoencoder(input_dim=input_dim).to(device)
+    model = TopoAutoencoder(input_dim=input_dim)
     ckpt = torch.load(args.topoae_dir / "topoae_best.pt", map_location="cpu")
     model.load_state_dict(ckpt["state_dict"])
     model.to(device)
     model.eval()
 
     output_dir = args.output_dir
-    for source_type in {str(st) if not isinstance(st, bytes) else st.decode("utf-8") for st in source_types}:
+    unique_sources = set()
+    for st in source_types:
+        norm = _norm_name(st)
+        if norm == "commercial":
+            norm = "commercials"
+        unique_sources.add(norm)
+    for source_type in unique_sources | {"tv", "commercials"}:
         (output_dir / source_type).mkdir(parents=True, exist_ok=True)
 
     grouped: Dict[Tuple[str, str], Dict[str, List]] = defaultdict(lambda: defaultdict(list))
@@ -59,8 +74,12 @@ def main() -> None:
     for idx in tqdm(range(X.shape[0]), desc="Export latents"):
         x = torch.from_numpy(((X[idx] - mean) / std).astype(np.float32)).unsqueeze(0).to(device)
         with torch.no_grad():
-            z = model.encode(x).squeeze(0).cpu().numpy()
-        key = (source_types[idx], video_names[idx])
+            z = model.encode(x).squeeze(0).detach().cpu().numpy()
+        source_type = _norm_name(source_types[idx])
+        video_name = _norm_name(video_names[idx])
+        if source_type == "commercial":
+            source_type = "commercials"
+        key = (source_type, video_name)
         target = grouped[key]
         target.setdefault("z_latent", []).append(z)
         target.setdefault("center_times", []).append(float(center[idx]))
@@ -80,6 +99,15 @@ def main() -> None:
 
     (output_dir / "manifest_latents.json").write_text(json.dumps(manifest, indent=2))
     (output_dir / "class_names.json").write_text(json.dumps(sorted(class_names), indent=2))
+    tv_dir = output_dir / "tv"
+    commercials_dir = output_dir / "commercials"
+    print(f"[export_latents] groups exported: {len(grouped)}")
+    tv_count = len(list(tv_dir.glob("*_latents.npz")))
+    commercial_count = len(list(commercials_dir.glob("*_latents.npz")))
+    print(f"[export_latents] tv files: {tv_count}")
+    print(f"[export_latents] commercial files: {commercial_count}")
+    if commercial_count == 0:
+        raise RuntimeError("No se exportaron latentes de commercials; revise source_type/video_name")
 
 
 if __name__ == "__main__":

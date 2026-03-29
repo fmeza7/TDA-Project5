@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -61,14 +62,19 @@ def _label_tv_window(
     tv_name: str,
     window_start: float,
     window_end: float,
+    center_time: float,
     gt_by_tv: Dict[str, List[Dict]],
     positive_overlap: float,
     negative_overlap: float,
+    include_ambiguous_as_background: bool,
+    center_inside_positive: bool,
 ) -> Tuple[Optional[str], int]:
     gt_entries = gt_by_tv.get(tv_name, [])
     best_overlap = 0.0
     best_entry: Optional[Dict] = None
     for entry in gt_entries:
+        if center_inside_positive and entry["start_time"] <= center_time <= entry["end_time"]:
+            return entry["commercial"], -2
         overlap = _interval_iou(window_start, window_end, entry["start_time"], entry["end_time"])
         if overlap > best_overlap:
             best_overlap = overlap
@@ -77,7 +83,21 @@ def _label_tv_window(
         return best_entry["commercial"], -2  # placeholder; actual ID resolved later
     if best_overlap <= negative_overlap:
         return BACKGROUND_NAME, BACKGROUND_ID
+    if include_ambiguous_as_background:
+        return BACKGROUND_NAME, BACKGROUND_ID
     return None, -1
+
+
+def _dataset_summary(records: List[WindowRecord]) -> Dict:
+    if not records:
+        return {"num_records": 0, "source_types": {}, "videos": {}, "labels": {}, "label_names": {}}
+    return {
+        "num_records": len(records),
+        "source_types": dict(Counter(rec.source_type for rec in records)),
+        "videos": dict(Counter(rec.video_name for rec in records)),
+        "labels": dict(Counter(rec.label_id for rec in records)),
+        "label_names": dict(Counter((rec.label_name or "__ignored__") for rec in records)),
+    }
 
 
 def _serialize_dataset(records: List[WindowRecord], output_path: Path) -> None:
@@ -107,6 +127,8 @@ def build_window_records(
     stride_frames: int,
     positive_overlap: float,
     negative_overlap: float,
+    include_ambiguous_as_background: bool,
+    center_inside_positive: bool,
 ) -> List[WindowRecord]:
     records: List[WindowRecord] = []
     for category in ("commercials", "tv"):
@@ -135,7 +157,15 @@ def build_window_records(
                     label_id = class_map.get(label_name, -1)
                 else:
                     label_name, label_id = _label_tv_window(
-                        stem, start_time, end_time, gt_by_tv, positive_overlap, negative_overlap
+                        stem,
+                        start_time,
+                        end_time,
+                        center_time,
+                        gt_by_tv,
+                        positive_overlap,
+                        negative_overlap,
+                        include_ambiguous_as_background,
+                        center_inside_positive,
                     )
                     if label_name == BACKGROUND_NAME:
                         label_id = BACKGROUND_ID
@@ -168,6 +198,8 @@ def main() -> None:
     parser.add_argument("--stride_frames", type=int, default=1)
     parser.add_argument("--positive_overlap", type=float, default=0.5)
     parser.add_argument("--negative_overlap", type=float, default=0.1)
+    parser.add_argument("--center_inside_positive", action="store_true")
+    parser.add_argument("--include_ambiguous_as_background", action="store_true")
     parser.add_argument("--mode", choices=["topoae", "temporal", "both"], default="both")
     args = parser.parse_args()
 
@@ -188,6 +220,8 @@ def main() -> None:
         args.stride_frames,
         args.positive_overlap,
         args.negative_overlap,
+        args.include_ambiguous_as_background,
+        args.center_inside_positive,
     )
 
     output_dir = args.output_dir
@@ -203,6 +237,10 @@ def main() -> None:
             "stride_frames": args.stride_frames,
         }
         (output_dir / f"{mode}_dataset_meta.json").write_text(json.dumps(meta, indent=2))
+        summary = _dataset_summary(filtered)
+        summary_path = output_dir / f"{mode}_dataset_summary.json"
+        summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False))
+        print(f"[window_dataset] {mode} summary:", summary)
 
     if args.mode in ("topoae", "both"):
         save_mode("topoae", records)
