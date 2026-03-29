@@ -1,0 +1,8 @@
+knn_dir: pipeline/pipeline3_dl_tda/artifacts/embedding_knn
+curve_dir: pipeline/pipeline3_dl_tda/artifacts/embedding_curves
+preproc_manifest: pipeline/preprocessing/outputs_cubical/manifest.json
+output: pipeline/pipeline3_dl_tda/artifacts/detections/detecciones_dl_tda.txt
+score_threshold: 0.5
+curve_threshold: 1.5
+merge_gap_sec: 2.0
+min_segment_sec: 3.0

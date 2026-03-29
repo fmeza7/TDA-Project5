@@ -1,0 +1,6 @@
+frames_dir: pipeline/pipeline3_dl_tda/artifacts/frames
+output_dir: pipeline/pipeline3_dl_tda/artifacts/visual_ae
+latent_dim: 64
+batch_size: 128
+lr: 0.001
+epochs: 30
