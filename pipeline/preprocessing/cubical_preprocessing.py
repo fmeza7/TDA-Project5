@@ -103,11 +103,20 @@ def diagram_stats(diag: np.ndarray) -> np.ndarray:
     )
 
 
+def transform_diagram(diag: np.ndarray, pi_transform: PersistenceImage) -> np.ndarray:
+    """Return persistence image vector for a given diagram, zero if empty."""
+    if diag.size == 0:
+        res = pi_transform.resolution
+        return np.zeros(res[0] * res[1], dtype=np.float32)
+    return pi_transform.transform([diag])[0].astype(np.float32)
+
+
 def cubical_descriptor(
     frame_gray: np.ndarray,
     grid_size: int,
     min_persistence: float,
-    pi_transform: PersistenceImage,
+    pi_transform_h0: PersistenceImage,
+    pi_transform_h1: PersistenceImage,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     resized = cv2.resize(frame_gray, (grid_size, grid_size), interpolation=cv2.INTER_AREA).astype(np.float32)
     normalized = (resized - resized.min()) / (np.ptp(resized) + 1e-6)
@@ -129,18 +138,12 @@ def cubical_descriptor(
     stats_h1 = diagram_stats(diag_h1)
     brightness = np.array([normalized.mean(), normalized.std()], dtype=np.float32)
 
-    if diag_h0.size or diag_h1.size:
-        stack = (
-            np.vstack([diag_h0, diag_h1])
-            if (diag_h0.size and diag_h1.size)
-            else (diag_h0 if diag_h0.size else diag_h1)
-        )
-        pi_vec = pi_transform.transform([stack])[0].astype(np.float32)
-    else:
-        res = pi_transform.resolution
-        pi_vec = np.zeros(res[0] * res[1], dtype=np.float32)
+    pi_h0_vec = transform_diagram(diag_h0, pi_transform_h0)
+    pi_h1_vec = transform_diagram(diag_h1, pi_transform_h1)
 
-    feature_vec = np.concatenate([stats_h0, stats_h1, brightness, pi_vec], dtype=np.float32)
+    feature_vec = np.concatenate(
+        [stats_h0, stats_h1, brightness, pi_h0_vec, pi_h1_vec], dtype=np.float32
+    )
     return feature_vec, diag_h0, diag_h1
 
 
@@ -149,7 +152,8 @@ def process_video(
     category: str,
     output_root: Path,
     args: argparse.Namespace,
-    pi_transform: PersistenceImage,
+    pi_transform_h0: PersistenceImage,
+    pi_transform_h1: PersistenceImage,
 ) -> VideoSummary | None:
     output_file = output_root / category / f"{video_path.stem}.npz"
     if output_file.exists() and not args.overwrite:
@@ -179,7 +183,9 @@ def process_video(
         if not ok:
             break
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        feature_vec, diag_h0, diag_h1 = cubical_descriptor(gray, args.grid_size, args.min_persistence, pi_transform)
+        feature_vec, diag_h0, diag_h1 = cubical_descriptor(
+            gray, args.grid_size, args.min_persistence, pi_transform_h0, pi_transform_h1
+        )
         descriptors.append(feature_vec)
         if diag_h0.size:
             h0_births.extend(diag_h0[:, 0].tolist())
@@ -195,8 +201,9 @@ def process_video(
     if descriptors:
         features = np.stack(descriptors).astype(np.float32)
     else:
-        pi_dim = pi_transform.resolution[0] * pi_transform.resolution[1]
-        features = np.zeros((0, pi_dim + 12), dtype=np.float32)
+        pi_dim = pi_transform_h0.resolution[0] * pi_transform_h0.resolution[1]
+        total_dim = 12 + 2 * pi_dim
+        features = np.zeros((0, total_dim), dtype=np.float32)
 
     payload = {
         "timestamps_sec": np.asarray(timestamps, dtype=np.float32),
@@ -208,6 +215,16 @@ def process_video(
         "diag_h1_births": np.asarray(h1_births, dtype=np.float32),
         "diag_h1_deaths": np.asarray(h1_deaths, dtype=np.float32),
         "diag_h1_offsets": np.asarray(h1_offsets, dtype=np.int32),
+        "feature_layout": np.array(
+            [
+                "h0_stats_5",
+                "h1_stats_5",
+                "brightness_2",
+                f"pi_h0_{pi_transform_h0.resolution[0] * pi_transform_h0.resolution[1]}",
+                f"pi_h1_{pi_transform_h1.resolution[0] * pi_transform_h1.resolution[1]}",
+            ],
+            dtype=np.str_,
+        ),
     }
     output_file.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(output_file, **payload)
@@ -221,7 +238,7 @@ def process_video(
         sampled_fps=float(args.sample_fps),
         duration_sec=float(duration),
         sample_stride_frames=float(native_fps / args.sample_fps if args.sample_fps > 0 else 0.0),
-        feature_dim=int(features.shape[1]) if features.size else int(pi_transform.resolution[0] * pi_transform.resolution[1] + 12),
+        feature_dim=int(features.shape[1]) if features.size else int(pi_transform_h0.resolution[0] * pi_transform_h0.resolution[1] * 2 + 12),
     )
     return summary
 
@@ -242,19 +259,28 @@ def main() -> None:
     output_root = Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    pi_transform = PersistenceImage(
+    pi_transform_h0 = PersistenceImage(
         bandwidth=0.05,
         weight=lambda birth_death: birth_death[1] - birth_death[0],
         resolution=[16, 16],
         im_range=[0.0, 1.0, 0.0, 1.0],
     )
-    pi_transform.fit([np.array([[0.0, 1.0]], dtype=np.float32)])
+    pi_transform_h1 = PersistenceImage(
+        bandwidth=0.05,
+        weight=lambda birth_death: birth_death[1] - birth_death[0],
+        resolution=[16, 16],
+        im_range=[0.0, 1.0, 0.0, 1.0],
+    )
+    pi_transform_h0.fit([np.array([[0.0, 1.0]], dtype=np.float32)])
+    pi_transform_h1.fit([np.array([[0.0, 1.0]], dtype=np.float32)])
 
     summaries: List[VideoSummary] = []
     for category, directory in (("tv", tv_dir), ("commercials", com_dir)):
         for video_path in iter_videos(directory):
             print(f"[{category}] Procesando {video_path.name}")
-            summary = process_video(video_path, category, output_root, args, pi_transform)
+            summary = process_video(
+                video_path, category, output_root, args, pi_transform_h0, pi_transform_h1
+            )
             if summary:
                 summaries.append(summary)
 

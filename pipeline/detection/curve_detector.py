@@ -66,6 +66,12 @@ def parse_args() -> argparse.Namespace:
         default=0.6,
         help="Umbral mínimo de correlación coseno para aceptar el match con un comercial",
     )
+    parser.add_argument(
+        "--match_radius",
+        type=int,
+        default=20,
+        help="Radio (frames) para desplazar la ventana alrededor del pico antes de correlacionar",
+    )
     return parser.parse_args()
 
 
@@ -192,6 +198,7 @@ def match_candidate(
     tv_timestamps: np.ndarray,
     peak_idx: int,
     commercials: Dict[str, CurveEntry],
+    search_radius: int,
 ) -> Tuple[str, float, int] | None:
     best_name = ""
     best_score = -np.inf
@@ -203,14 +210,18 @@ def match_candidate(
         length = com_signal.size
         if tv_signal.size < length:
             continue
-        start = max(0, min(peak_idx - length // 2, tv_signal.size - length))
-        segment = tv_signal[start : start + length]
-        norm_segment = normalize_vector(segment)
-        score = float(np.dot(norm_segment, com_signal))
-        if score > best_score:
-            best_score = score
-            best_name = entry.name
-            best_start = start
+        center = peak_idx - length // 2
+        start_min = max(0, center - max(search_radius, 0))
+        start_max = min(tv_signal.size - length, center + max(search_radius, 0))
+        if start_max < start_min:
+            continue
+        for start in range(start_min, start_max + 1):
+            segment = normalize_vector(tv_signal[start : start + length])
+            score = float(np.dot(segment, com_signal))
+            if score > best_score:
+                best_score = score
+                best_name = entry.name
+                best_start = start
     if best_score <= -np.inf:
         return None
     return best_name, best_score, best_start
@@ -232,7 +243,7 @@ def main() -> None:
         if not segments:
             continue
         for start, end, peak_idx in segments:
-            match = match_candidate(z_signal, tv_entry.timestamps, peak_idx, commercials)
+            match = match_candidate(z_signal, tv_entry.timestamps, peak_idx, commercials, args.match_radius)
             if match is None:
                 continue
             com_name, score, best_start = match

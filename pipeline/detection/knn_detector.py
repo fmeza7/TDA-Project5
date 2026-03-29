@@ -19,6 +19,22 @@ from typing import Dict, List, Optional
 import numpy as np
 
 
+def rolling_zscore(signal: np.ndarray, window: int) -> np.ndarray:
+    if signal.size == 0:
+        return signal
+    if window <= 1 or signal.size <= window:
+        mean = signal.mean()
+        std = signal.std()
+        std = std if std > 1e-6 else 1.0
+        return ((signal - mean) / std).astype(np.float32)
+    kernel = np.ones(window, dtype=np.float32) / float(window)
+    mean = np.convolve(signal, kernel, mode="same")
+    sq_mean = np.convolve(signal ** 2, kernel, mode="same")
+    var = np.maximum(sq_mean - mean ** 2, 1e-6)
+    std = np.sqrt(var, dtype=np.float32)
+    return ((signal - mean) / std).astype(np.float32)
+
+
 def vote_window(
     start_idx: int,
     end_idx: int,
@@ -29,22 +45,29 @@ def vote_window(
     commercial_ts: np.ndarray,
     commercial_names: List[str],
 ) -> tuple[str, float, float]:
-    idx_slice = neighbor_idx[start_idx:end_idx, 0]
-    if idx_slice.size == 0:
+    window_idx = neighbor_idx[start_idx:end_idx]
+    window_scores = neighbor_scores[start_idx:end_idx]
+    if window_idx.size == 0:
         return "", 0.0, 0.0
-    scores = neighbor_scores[start_idx:end_idx, 0]
-    vid_ids = video_idx[idx_slice]
-    names = [commercial_names[int(i)] for i in vid_ids]
-    unique, counts = np.unique(names, return_counts=True)
-    best_idx = int(np.argmax(counts))
-    best_name = str(unique[best_idx])
-    mask = np.array(names) == best_name
-    if not mask.any():
-        return best_name, 0.0, 0.0
-    selected_scores = scores[mask]
-    avg_score = float(np.mean(selected_scores)) if selected_scores.size else 0.0
-    offsets = tv_timestamps[start_idx:end_idx][mask] - commercial_ts[idx_slice][mask]
-    avg_offset = float(np.mean(offsets)) if offsets.size else 0.0
+    flat_idx = window_idx.reshape(-1)
+    flat_scores = window_scores.reshape(-1)
+    repeats = window_idx.shape[1]
+    tv_times = np.repeat(tv_timestamps[start_idx:end_idx], repeats)
+    score_by_name: Dict[str, float] = {}
+    count_by_name: Dict[str, int] = {}
+    offsets_by_name: Dict[str, List[float]] = {}
+    for idx_val, sc, tv_time in zip(flat_idx, flat_scores, tv_times):
+        vid_id = int(video_idx[idx_val])
+        name = commercial_names[vid_id]
+        score_by_name[name] = score_by_name.get(name, 0.0) + float(sc)
+        count_by_name[name] = count_by_name.get(name, 0) + 1
+        offsets_by_name.setdefault(name, []).append(float(tv_time - commercial_ts[idx_val]))
+    if not score_by_name:
+        return "", 0.0, 0.0
+    best_name = max(score_by_name, key=score_by_name.get)
+    avg_score = score_by_name[best_name] / max(count_by_name.get(best_name, 1), 1)
+    offset_list = offsets_by_name.get(best_name, [])
+    avg_offset = float(np.mean(offset_list)) if offset_list else 0.0
     return best_name, avg_score, avg_offset
 
 @dataclass
@@ -128,6 +151,18 @@ def parse_args() -> argparse.Namespace:
         default=1.5,
         help="Umbral z-score mínimo de la curva para considerar una ventana",
     )
+    parser.add_argument(
+        "--curve_z_window",
+        type=int,
+        default=15,
+        help="Ventana (frames) para calcular z-score si no existe combined_activity_z en las curvas",
+    )
+    parser.add_argument(
+        "--merge_overlap_ratio",
+        type=float,
+        default=0.5,
+        help="Solapamiento mínimo (IoU) para fusionar detecciones superpuestas del mismo comercial",
+    )
     parser.add_argument("--include_score", action="store_true", help="Incluye la columna de score en el archivo de salida")
     return parser.parse_args()
 
@@ -152,7 +187,11 @@ def finalize_track(
         return None
     start_time = float(timestamps[track.start_idx])
     end_time = float(timestamps[track.last_idx])
-    observed_duration = max(end_time - start_time, 0.0)
+    if timestamps.size > 1:
+        median_dt = float(np.median(np.diff(timestamps)))
+    else:
+        median_dt = 0.0
+    observed_duration = max((end_time - start_time) + max(median_dt, 0.0), max(median_dt, 0.0))
     expected_duration = commercial_durations.get(track.commercial, observed_duration)
     if expected_duration <= 0:
         expected_duration = observed_duration
@@ -215,6 +254,32 @@ def deduplicate_by_gap(detections: List[Dict], min_gap: float) -> List[Dict]:
     return filtered
 
 
+def merge_overlapping_detections(dets: List[Dict], overlap_ratio: float) -> List[Dict]:
+    if not dets:
+        return dets
+    merged: List[Dict] = []
+    dets_sorted = sorted(dets, key=lambda d: (d["commercial"], d["start_time"]))
+    for det in dets_sorted:
+        if not merged:
+            merged.append(det)
+            continue
+        prev = merged[-1]
+        if prev["commercial"] != det["commercial"]:
+            merged.append(det)
+            continue
+        prev_end = prev["start_time"] + prev["duration"]
+        det_end = det["start_time"] + det["duration"]
+        inter = min(prev_end, det_end) - max(prev["start_time"], det["start_time"])
+        union = max(prev_end, det_end) - min(prev["start_time"], det["start_time"])
+        iou = inter / union if inter > 0 and union > 0 else 0.0
+        if iou >= overlap_ratio:
+            if det["score"] > prev["score"]:
+                merged[-1] = det
+        else:
+            merged.append(det)
+    return merged
+
+
 def detect_in_video(
     tv_name: str,
     npz_path: Path,
@@ -245,7 +310,8 @@ def detect_in_video(
     curve_blocks = 0
     curve_rejections = 0
     if args.curve_dir:
-        curve_manifest = json.loads(Path(args.curve_dir, "manifest_curves.json").read_text())
+        manifest_path = Path(args.curve_dir) / "manifest_curves.json"
+        curve_manifest = json.loads(manifest_path.read_text())
         curve_map = {
             Path(entry["source_path"]).stem: entry["output_path"]
             for entry in curve_manifest
@@ -255,13 +321,18 @@ def detect_in_video(
         if curve_rel:
             curve_path = Path(curve_rel)
             if not curve_path.is_absolute():
-                curve_path = (Path.cwd() / curve_path).resolve()
+                curve_path = (Path(args.curve_dir) / curve_path).resolve()
             if curve_path.exists():
                 curve_data = np.load(curve_path)
                 labels = [str(x) for x in curve_data["curve_labels"]]
-                if "combined_activity" in labels:
+                if "combined_activity_z" in labels:
+                    idx = labels.index("combined_activity_z")
+                    curve_signal = curve_data["curve_signals"][:, idx].astype(np.float32)
+                    curve_loaded = True
+                elif "combined_activity" in labels:
                     idx = labels.index("combined_activity")
-                    curve_signal = curve_data["curve_signals"][:, idx]
+                    raw_signal = curve_data["curve_signals"][:, idx].astype(np.float32)
+                    curve_signal = rolling_zscore(raw_signal, max(args.curve_z_window, 1))
                     curve_loaded = True
             else:
                 print(f"[curve] archivo no encontrado: {curve_path} para {tv_name}")
@@ -290,7 +361,7 @@ def detect_in_video(
             i, window_end, timestamps, neighbor_idx, neighbor_scores, video_idx, commercial_ts, commercial_names
         )
         score = avg_score
-        if score < args.score_threshold:
+        if not com_name or score < args.score_threshold:
             result = finalize_track(current, timestamps, commercial_durations, args)
             if result:
                 detections.append(result)
@@ -298,13 +369,13 @@ def detect_in_video(
             i = window_end
             continue
 
-        offset = float(timestamps[i] - avg_offset)
+        offset = float(avg_offset)
 
         if (
             current
             and current.commercial == com_name
             and abs(offset - current.offset) <= args.offset_tolerance
-            and i == current.last_idx + 1
+            and i <= current.last_idx + 1
         ):
             current.last_idx = window_end - 1
             current.offset = 0.5 * (current.offset + offset)
@@ -338,6 +409,7 @@ def detect_in_video(
                 f"({curve_rejections/total_windows:.1%} descartadas)"
             )
     detections = deduplicate_by_gap(detections, args.min_gap)
+    detections = merge_overlapping_detections(detections, args.merge_overlap_ratio)
 
     rows: List[str] = []
     for det in detections:

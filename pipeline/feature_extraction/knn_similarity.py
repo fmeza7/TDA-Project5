@@ -38,6 +38,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Aplica normalización L2 a los descriptores antes de calcular similitud coseno",
     )
+    parser.add_argument(
+        "--standardize",
+        action="store_true",
+        help="Estandariza cada columna usando media/desviación del banco de comerciales antes de normalizar",
+    )
     parser.add_argument("--batch_size", type=int, default=2048, help="Procesa los frames de TV en lotes para ahorrar memoria")
     parser.add_argument("--overwrite", action="store_true", help="Reemplaza archivos existentes en la carpeta de salida")
     return parser.parse_args()
@@ -67,7 +72,20 @@ def normalize_rows(matrix: np.ndarray) -> np.ndarray:
     return matrix / norms
 
 
-def build_commercial_bank(root: Path, normalize: bool) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
+def fit_standardizer(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    mean = matrix.mean(axis=0, keepdims=True).astype(np.float32)
+    std = matrix.std(axis=0, keepdims=True).astype(np.float32)
+    std[std < 1e-6] = 1.0
+    return mean, std
+
+
+def apply_standardizer(matrix: np.ndarray, mean: np.ndarray, std: np.ndarray) -> np.ndarray:
+    return ((matrix - mean) / std).astype(np.float32)
+
+
+def build_commercial_bank(
+    root: Path, normalize: bool, standardize: bool
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, List[str], np.ndarray | None, np.ndarray | None]:
     feature_list: List[np.ndarray] = []
     video_idx_list: List[int] = []
     frame_idx_list: List[int] = []
@@ -88,12 +106,17 @@ def build_commercial_bank(root: Path, normalize: bool) -> Tuple[np.ndarray, np.n
         raise RuntimeError(f"No se encontraron características en {root}")
 
     feature_matrix = np.vstack(feature_list).astype(np.float32)
+    scaler_mean: np.ndarray | None = None
+    scaler_std: np.ndarray | None = None
+    if standardize:
+        scaler_mean, scaler_std = fit_standardizer(feature_matrix)
+        feature_matrix = apply_standardizer(feature_matrix, scaler_mean, scaler_std)
     if normalize:
         feature_matrix = normalize_rows(feature_matrix)
     video_indices = np.concatenate(video_idx_list)
     frame_indices = np.concatenate(frame_idx_list)
     timestamps = np.concatenate(timestamp_list)
-    return feature_matrix, video_indices, frame_indices, timestamps, video_names
+    return feature_matrix, video_indices, frame_indices, timestamps, video_names, scaler_mean, scaler_std
 
 
 def compute_neighbors(
@@ -102,6 +125,7 @@ def compute_neighbors(
     k: int,
     batch_size: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
+    k = max(1, min(k, bank_matrix.shape[0]))
     num_tv = tv_feats.shape[0]
     neighbor_idx = np.zeros((num_tv, k), dtype=np.int32)
     neighbor_scores = np.zeros((num_tv, k), dtype=np.float32)
@@ -131,7 +155,11 @@ def process_tv_video(
     if feats.size == 0:
         print(f"[WARN] {npz_path.name} no tiene características; se omite.")
         return None
-    tv_feats = normalize_rows(feats) if args.normalize else feats
+    tv_feats = feats.astype(np.float32)
+    if args.standardize and bank_meta.get("scaler_mean") is not None:
+        tv_feats = apply_standardizer(tv_feats, bank_meta["scaler_mean"], bank_meta["scaler_std"])
+    if args.normalize:
+        tv_feats = normalize_rows(tv_feats)
     neighbor_idx, neighbor_scores = compute_neighbors(tv_feats, bank_matrix, args.k, args.batch_size)
 
     output_path = Path(args.output_dir) / "tv" / f"{npz_path.stem}_knn.npz"
@@ -148,6 +176,8 @@ def process_tv_video(
         "commercial_frame_idx": bank_meta["frame_idx"],
         "commercial_timestamps": bank_meta["timestamps"],
         "commercial_video_names": np.array(video_names, dtype=np.str_),
+        "standardized": np.array([args.standardize], dtype=np.bool_),
+        "normalized": np.array([args.normalize], dtype=np.bool_),
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(output_path, **meta)
@@ -160,13 +190,15 @@ def main() -> None:
     output_root = Path(args.output_dir)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    bank_matrix, vid_idx, frame_idx, timestamps, video_names = build_commercial_bank(
-        input_root / "commercials", args.normalize
+    bank_matrix, vid_idx, frame_idx, timestamps, video_names, scaler_mean, scaler_std = build_commercial_bank(
+        input_root / "commercials", args.normalize, args.standardize
     )
     bank_meta = {
         "video_idx": vid_idx,
         "frame_idx": frame_idx,
         "timestamps": timestamps,
+        "scaler_mean": scaler_mean,
+        "scaler_std": scaler_std,
     }
 
     manifest: List[Dict[str, str]] = []
