@@ -1,1 +1,218 @@
-[]
+[
+  {
+    "video_name": "mega-2014_04_10",
+    "category": "tv",
+    "num_frames": 10755,
+    "sampled_fps": 3.0,
+    "duration_sec": 3588.2513333333336,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_10_frames.npz"
+  },
+  {
+    "video_name": "mega-2014_04_11",
+    "category": "tv",
+    "num_frames": 10791,
+    "sampled_fps": 3.0,
+    "duration_sec": 3600.2633333333333,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_11_frames.npz"
+  },
+  {
+    "video_name": "mega-2014_04_16",
+    "category": "tv",
+    "num_frames": 10524,
+    "sampled_fps": 3.0,
+    "duration_sec": 3511.1743333333334,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_16_frames.npz"
+  },
+  {
+    "video_name": "mega-2014_04_17",
+    "category": "tv",
+    "num_frames": 10790,
+    "sampled_fps": 3.0,
+    "duration_sec": 3599.929666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_17_frames.npz"
+  },
+  {
+    "video_name": "mega-2014_04_23",
+    "category": "tv",
+    "num_frames": 10791,
+    "sampled_fps": 3.0,
+    "duration_sec": 3600.2633333333333,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_23_frames.npz"
+  },
+  {
+    "video_name": "mega-2014_04_25",
+    "category": "tv",
+    "num_frames": 10792,
+    "sampled_fps": 3.0,
+    "duration_sec": 3600.597,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/tv/mega-2014_04_25_frames.npz"
+  },
+  {
+    "video_name": "ballerina",
+    "category": "commercials",
+    "num_frames": 95,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.36466666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/ballerina_frames.npz"
+  },
+  {
+    "video_name": "colgate sensitive",
+    "category": "commercials",
+    "num_frames": 92,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.363666666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/colgate sensitive_frames.npz"
+  },
+  {
+    "video_name": "colgate total12",
+    "category": "commercials",
+    "num_frames": 91,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.03,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/colgate total12_frames.npz"
+  },
+  {
+    "video_name": "cristal",
+    "category": "commercials",
+    "num_frames": 95,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.36466666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/cristal_frames.npz"
+  },
+  {
+    "video_name": "dfm motor",
+    "category": "commercials",
+    "num_frames": 91,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.03,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/dfm motor_frames.npz"
+  },
+  {
+    "video_name": "dove desodorante hombre",
+    "category": "commercials",
+    "num_frames": 46,
+    "sampled_fps": 3.0,
+    "duration_sec": 15.015,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/dove desodorante hombre_frames.npz"
+  },
+  {
+    "video_name": "dove pelo",
+    "category": "commercials",
+    "num_frames": 91,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.03,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/dove pelo_frames.npz"
+  },
+  {
+    "video_name": "falabella connect",
+    "category": "commercials",
+    "num_frames": 49,
+    "sampled_fps": 3.0,
+    "duration_sec": 16.016000000000002,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/falabella connect_frames.npz"
+  },
+  {
+    "video_name": "ferreteria mts",
+    "category": "commercials",
+    "num_frames": 96,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.698333333333334,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/ferreteria mts_frames.npz"
+  },
+  {
+    "video_name": "limon soda",
+    "category": "commercials",
+    "num_frames": 96,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.698333333333334,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/limon soda_frames.npz"
+  },
+  {
+    "video_name": "mall plaza (2)",
+    "category": "commercials",
+    "num_frames": 95,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.36466666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/mall plaza (2)_frames.npz"
+  },
+  {
+    "video_name": "mall plaza",
+    "category": "commercials",
+    "num_frames": 63,
+    "sampled_fps": 3.0,
+    "duration_sec": 20.687333333333335,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/mall plaza_frames.npz"
+  },
+  {
+    "video_name": "mr big (2)",
+    "category": "commercials",
+    "num_frames": 95,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.36466666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/mr big (2)_frames.npz"
+  },
+  {
+    "video_name": "omo1",
+    "category": "commercials",
+    "num_frames": 65,
+    "sampled_fps": 3.0,
+    "duration_sec": 21.354666666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/omo1_frames.npz"
+  },
+  {
+    "video_name": "pantene expert",
+    "category": "commercials",
+    "num_frames": 61,
+    "sampled_fps": 3.0,
+    "duration_sec": 20.02,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/pantene expert_frames.npz"
+  },
+  {
+    "video_name": "petrobras pantuflas mundialeras",
+    "category": "commercials",
+    "num_frames": 97,
+    "sampled_fps": 3.0,
+    "duration_sec": 32.032000000000004,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/petrobras pantuflas mundialeras_frames.npz"
+  },
+  {
+    "video_name": "presto",
+    "category": "commercials",
+    "num_frames": 91,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.03,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/presto_frames.npz"
+  },
+  {
+    "video_name": "samsung",
+    "category": "commercials",
+    "num_frames": 93,
+    "sampled_fps": 3.0,
+    "duration_sec": 30.697333333333333,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/samsung_frames.npz"
+  },
+  {
+    "video_name": "scotiabank",
+    "category": "commercials",
+    "num_frames": 76,
+    "sampled_fps": 3.0,
+    "duration_sec": 25.025000000000002,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/scotiabank_frames.npz"
+  },
+  {
+    "video_name": "soprole panacota",
+    "category": "commercials",
+    "num_frames": 95,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.36466666666667,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/soprole panacota_frames.npz"
+  },
+  {
+    "video_name": "vtr",
+    "category": "commercials",
+    "num_frames": 96,
+    "sampled_fps": 3.0,
+    "duration_sec": 31.698333333333334,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frames/commercials/vtr_frames.npz"
+  }
+]

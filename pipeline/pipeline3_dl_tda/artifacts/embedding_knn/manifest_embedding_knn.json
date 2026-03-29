@@ -1,0 +1,32 @@
+[
+  {
+    "video_name": "mega-2014_04_10",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_10_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10744
+  },
+  {
+    "video_name": "mega-2014_04_11",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_11_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10780
+  },
+  {
+    "video_name": "mega-2014_04_16",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_16_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10513
+  },
+  {
+    "video_name": "mega-2014_04_17",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_17_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10779
+  },
+  {
+    "video_name": "mega-2014_04_23",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_23_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10780
+  },
+  {
+    "video_name": "mega-2014_04_25",
+    "path": "pipeline/pipeline3_dl_tda/artifacts/embedding_knn/tv/mega-2014_04_25_embeddings_embedding_tda_knn.npz",
+    "num_windows": 10781
+  }
+]

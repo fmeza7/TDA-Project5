@@ -1,0 +1,191 @@
+[
+  {
+    "video_name": "mega-2014_04_10",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10755,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_10_embeddings.npz"
+  },
+  {
+    "video_name": "mega-2014_04_11",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10791,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_11_embeddings.npz"
+  },
+  {
+    "video_name": "mega-2014_04_16",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10524,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_16_embeddings.npz"
+  },
+  {
+    "video_name": "mega-2014_04_17",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10790,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_17_embeddings.npz"
+  },
+  {
+    "video_name": "mega-2014_04_23",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10791,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_23_embeddings.npz"
+  },
+  {
+    "video_name": "mega-2014_04_25",
+    "category": "tv",
+    "latent_dim": 64,
+    "num_embeddings": 10792,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/tv/mega-2014_04_25_embeddings.npz"
+  },
+  {
+    "video_name": "ballerina",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 95,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/ballerina_embeddings.npz"
+  },
+  {
+    "video_name": "colgate sensitive",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 92,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/colgate sensitive_embeddings.npz"
+  },
+  {
+    "video_name": "colgate total12",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 91,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/colgate total12_embeddings.npz"
+  },
+  {
+    "video_name": "cristal",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 95,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/cristal_embeddings.npz"
+  },
+  {
+    "video_name": "dfm motor",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 91,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/dfm motor_embeddings.npz"
+  },
+  {
+    "video_name": "dove desodorante hombre",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 46,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/dove desodorante hombre_embeddings.npz"
+  },
+  {
+    "video_name": "dove pelo",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 91,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/dove pelo_embeddings.npz"
+  },
+  {
+    "video_name": "falabella connect",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 49,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/falabella connect_embeddings.npz"
+  },
+  {
+    "video_name": "ferreteria mts",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 96,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/ferreteria mts_embeddings.npz"
+  },
+  {
+    "video_name": "limon soda",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 96,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/limon soda_embeddings.npz"
+  },
+  {
+    "video_name": "mall plaza (2)",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 95,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/mall plaza (2)_embeddings.npz"
+  },
+  {
+    "video_name": "mall plaza",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 63,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/mall plaza_embeddings.npz"
+  },
+  {
+    "video_name": "mr big (2)",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 95,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/mr big (2)_embeddings.npz"
+  },
+  {
+    "video_name": "omo1",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 65,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/omo1_embeddings.npz"
+  },
+  {
+    "video_name": "pantene expert",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 61,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/pantene expert_embeddings.npz"
+  },
+  {
+    "video_name": "petrobras pantuflas mundialeras",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 97,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/petrobras pantuflas mundialeras_embeddings.npz"
+  },
+  {
+    "video_name": "presto",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 91,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/presto_embeddings.npz"
+  },
+  {
+    "video_name": "samsung",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 93,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/samsung_embeddings.npz"
+  },
+  {
+    "video_name": "scotiabank",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 76,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/scotiabank_embeddings.npz"
+  },
+  {
+    "video_name": "soprole panacota",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 95,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/soprole panacota_embeddings.npz"
+  },
+  {
+    "video_name": "vtr",
+    "category": "commercials",
+    "latent_dim": 64,
+    "num_embeddings": 96,
+    "path": "pipeline/pipeline3_dl_tda/artifacts/frame_embeddings/commercials/vtr_embeddings.npz"
+  }
+]

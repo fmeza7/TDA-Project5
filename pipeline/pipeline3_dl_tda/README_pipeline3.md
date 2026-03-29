@@ -17,8 +17,8 @@ Este pipeline agrega una tercera ruta experimental que primero aprende **embeddi
 
 ```bash
 python -m pipeline.pipeline3_dl_tda.frame_sampling \
-  --tv_dir data/tv \
-  --commercials_dir data/commercials \
+  --tv_dir data/television \
+  --commercials_dir data/comerciales \
   --output_dir pipeline/pipeline3_dl_tda/artifacts/frames \
   --sample_fps 3.0 \
   --image_size 48
@@ -64,5 +64,3 @@ python -m pipeline.pipeline3_dl_tda.detector_embedding_tda \
 
 python evaluar-v2.py pipeline/pipeline3_dl_tda/artifacts/detecciones/detecciones_dl_tda.txt gt.txt
 ```
-
-Ajusta los paths (`data/tv`, `data/commercials`) según tu estructura local.

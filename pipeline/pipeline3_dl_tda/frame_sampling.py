@@ -82,7 +82,10 @@ def main() -> None:
         (args.tv_dir, "tv", tv_out),
         (args.commercials_dir, "commercials", commercials_out),
     ]:
-        for video_path in sorted(folder.glob("*.mpg")):
+        video_paths: List[Path] = []
+        for pattern in ("*.mpg", "*.MPG", "*.mp4", "*.MP4"):
+            video_paths.extend(folder.glob(pattern))
+        for video_path in sorted(video_paths):
             out_path = out_root / f"{video_path.stem}_frames.npz"
             rec = sample_video(video_path, out_path, args.sample_fps, args.image_size, category)
             manifest.append(rec)
