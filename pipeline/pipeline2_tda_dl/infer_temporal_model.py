@@ -13,6 +13,14 @@ from .temporal_dataset import _load_latent_file
 from .temporal_model import TemporalClassifier
 
 
+def resolve_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
 def _load_class_map(path: Path) -> Dict[int, str]:
     mapping = json.loads(path.read_text())
     return {int(k): v for k, v in mapping.items()}
@@ -44,6 +52,9 @@ def main() -> None:
     config = json.loads(config_path.read_text()) if config_path.exists() else {}
     seq_len = int(config.get("seq_len", 9))
 
+    device = resolve_device()
+    print(f"Using device: {device}")
+
     class_map = _load_class_map(args.temporal_model_dir / "class_map.json")
     model_ckpt = torch.load(args.temporal_model_dir / "temporal_best.pt", map_location="cpu")
     first_file = next((args.latents_dir / "tv").glob("*_latents.npz"), None)
@@ -51,7 +62,7 @@ def main() -> None:
         raise RuntimeError("No se encontraron latentes de TV; ejecute export_latents primero")
     latent_sample = np.load(first_file, allow_pickle=True)["z_latent"]
     latent_dim = latent_sample.shape[1]
-    model = TemporalClassifier(latent_dim=latent_dim, num_classes=len(class_map), seq_len=seq_len)
+    model = TemporalClassifier(latent_dim=latent_dim, num_classes=len(class_map), seq_len=seq_len).to(device)
     model.load_state_dict(model_ckpt["state_dict"])
     model.eval()
 
@@ -70,7 +81,7 @@ def main() -> None:
         for start in range(0, z.shape[0] - seq_len + 1):
             end_idx = start + seq_len
             mid = start + seq_len // 2
-            seq_tensor = torch.from_numpy(z[start:end_idx]).unsqueeze(0).float()
+            seq_tensor = torch.from_numpy(z[start:end_idx]).unsqueeze(0).float().to(device)
             with torch.no_grad():
                 logits = model(seq_tensor)
                 probs = torch.softmax(logits, dim=1).squeeze(0)

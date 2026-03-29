@@ -16,6 +16,14 @@ from .temporal_dataset import TemporalSequenceDataset, build_sequence_records, s
 from .temporal_model import TemporalClassifier
 
 
+def resolve_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
 def _build_class_weights(labels: List[int], num_classes: int) -> torch.Tensor:
     counts = np.bincount(labels, minlength=num_classes).astype(np.float32)
     counts[counts == 0] = 1.0
@@ -36,6 +44,9 @@ def main() -> None:
     parser.add_argument("--val_tv", nargs="*", default=[])
     args = parser.parse_args()
 
+    device = resolve_device()
+    print(f"Using device: {device}")
+
     records = build_sequence_records(args.latents_dir, args.seq_len, min_label_id=0)
     if not records:
         raise RuntimeError("No se generaron secuencias para entrenamiento")
@@ -49,7 +60,6 @@ def main() -> None:
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TemporalClassifier(latent_dim=latent_dim, num_classes=num_classes, seq_len=args.seq_len).to(device)
     class_weights = _build_class_weights([rec.label_id for rec in train_records], num_classes).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
@@ -99,7 +109,14 @@ def main() -> None:
             best_val = avg_val
             torch.save({"state_dict": model.state_dict()}, model_path)
 
-    config = vars(args)
+    config = {}
+    for k, v in vars(args).items():
+        if isinstance(v, Path):
+            config[k] = str(v)
+        elif isinstance(v, list):
+            config[k] = [str(item) for item in v]
+        else:
+            config[k] = v
     (output_dir / "temporal_config.json").write_text(json.dumps(config, indent=2))
     (output_dir / "train_history.json").write_text(json.dumps(history, indent=2))
     # save label names

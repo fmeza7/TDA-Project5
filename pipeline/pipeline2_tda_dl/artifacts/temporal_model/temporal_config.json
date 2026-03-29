@@ -1,0 +1,11 @@
+{
+  "latents_dir": "pipeline/pipeline2_tda_dl/artifacts/latents",
+  "output_dir": "pipeline/pipeline2_tda_dl/artifacts/temporal_model",
+  "seq_len": 9,
+  "batch_size": 64,
+  "lr": 0.0001,
+  "epochs": 50,
+  "weight_decay": 0.0,
+  "train_tv": [],
+  "val_tv": []
+}

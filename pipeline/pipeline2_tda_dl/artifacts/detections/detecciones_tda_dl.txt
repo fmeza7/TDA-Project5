@@ -1,0 +1,4 @@
+# television	inicio_seg	largo_seg	comercial	score
+mega-2014_04_10	3352.987	15.048	dove desodorante hombre	0.9998
+mega-2014_04_25	1273.343	15.048	dove desodorante hombre	0.9998
+mega-2014_04_25	3228.329	20.721	dove desodorante hombre	0.9920

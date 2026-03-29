@@ -13,6 +13,14 @@ from tqdm import tqdm
 from .topoae_model import TopoAutoencoder
 
 
+def resolve_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Exportar embeddings latentes del TopoAE")
     parser.add_argument("--window_data", type=Path, required=True)
@@ -34,19 +42,22 @@ def main() -> None:
     std = np.load(args.topoae_dir / "scaler_std.npy")
     input_dim = X.shape[1]
 
-    model = TopoAutoencoder(input_dim=input_dim)
+    device = resolve_device()
+    print(f"Using device: {device}")
+    model = TopoAutoencoder(input_dim=input_dim).to(device)
     ckpt = torch.load(args.topoae_dir / "topoae_best.pt", map_location="cpu")
     model.load_state_dict(ckpt["state_dict"])
+    model.to(device)
     model.eval()
 
     output_dir = args.output_dir
-    (output_dir / "tv").mkdir(parents=True, exist_ok=True)
-    (output_dir / "commercials").mkdir(parents=True, exist_ok=True)
+    for source_type in {str(st) if not isinstance(st, bytes) else st.decode("utf-8") for st in source_types}:
+        (output_dir / source_type).mkdir(parents=True, exist_ok=True)
 
     grouped: Dict[Tuple[str, str], Dict[str, List]] = defaultdict(lambda: defaultdict(list))
 
     for idx in tqdm(range(X.shape[0]), desc="Export latents"):
-        x = torch.from_numpy(((X[idx] - mean) / std).astype(np.float32)).unsqueeze(0)
+        x = torch.from_numpy(((X[idx] - mean) / std).astype(np.float32)).unsqueeze(0).to(device)
         with torch.no_grad():
             z = model.encode(x).squeeze(0).cpu().numpy()
         key = (source_types[idx], video_names[idx])
@@ -69,3 +80,7 @@ def main() -> None:
 
     (output_dir / "manifest_latents.json").write_text(json.dumps(manifest, indent=2))
     (output_dir / "class_names.json").write_text(json.dumps(sorted(class_names), indent=2))
+
+
+if __name__ == "__main__":
+    main()

@@ -15,6 +15,26 @@ from .topo_loss import topo_loss_0d
 from .topoae_model import TopoAutoencoder
 
 
+def resolve_device() -> torch.device:
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+
+def _normalize_name(value) -> str:
+    if isinstance(value, bytes):
+        value = value.decode("utf-8")
+    value = str(value)
+    # remove extensions/suffixes
+    stem = Path(value).stem
+    for suffix in ("_curves", "_latents"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+    return stem
+
+
 def _select_indices(
     video_names: np.ndarray,
     source_types: np.ndarray,
@@ -24,8 +44,10 @@ def _select_indices(
     tv_mask = source_types == "tv"
     commercials_mask = source_types == "commercial"
     unique_tv = sorted(set(video_names[tv_mask]))
-    train_set = set(train_tv) if train_tv else set(unique_tv[: max(1, len(unique_tv) - 1)])
-    val_set = set(val_tv) if val_tv else set(unique_tv) - train_set
+    train_set = {_normalize_name(name) for name in train_tv if name} if train_tv else set()
+    if not train_set:
+        train_set = set(unique_tv[: max(1, len(unique_tv) - 1)])
+    val_set = {_normalize_name(name) for name in val_tv if name} if val_tv else set(unique_tv) - train_set
     if not val_set:
         val_candidates = [tv for tv in unique_tv if tv not in train_set]
         if val_candidates:
@@ -33,7 +55,14 @@ def _select_indices(
     train_idx = np.where((tv_mask & np.isin(video_names, list(train_set))) | commercials_mask)[0]
     val_idx = np.where(tv_mask & np.isin(video_names, list(val_set)))[0]
     if train_idx.size == 0 or val_idx.size == 0:
-        raise RuntimeError("Train/val split vacío; revise --train_tv y --val_tv")
+        debug_info = {
+            "unique_tv": unique_tv,
+            "train_set": list(train_set),
+            "val_set": list(val_set),
+            "matched_train": video_names[np.isin(video_names, list(train_set))].tolist(),
+            "matched_val": video_names[np.isin(video_names, list(val_set))].tolist(),
+        }
+        raise RuntimeError(f"Train/val split vacío; revise --train_tv y --val_tv. Detalles: {json.dumps(debug_info, indent=2)}")
     return train_idx, val_idx
 
 
@@ -120,11 +149,17 @@ def main() -> None:
     parser.add_argument("--train_tv", nargs="*", default=[])
     parser.add_argument("--val_tv", nargs="*", default=[])
     args = parser.parse_args()
+    device = resolve_device()
+    print(f"Using device: {device}")
 
     data = np.load(args.window_data, allow_pickle=True)
     X = data["X_flat"]
-    video_names = data["video_name"]
-    source_types = data["source_type"]
+    raw_video_names = data["video_name"]
+    raw_source_types = data["source_type"]
+    video_names = np.array([_normalize_name(name) for name in raw_video_names])
+    source_types = np.array([str(st) if not isinstance(st, bytes) else st.decode("utf-8") for st in raw_source_types])
+    print("train_topoae: unique video_names =", sorted(set(video_names)))
+    print("train_topoae: unique source_types =", sorted(set(source_types)))
     train_idx, val_idx = _select_indices(video_names, source_types, args.train_tv, args.val_tv)
 
     mean = X[train_idx].mean(axis=0)
@@ -140,7 +175,6 @@ def main() -> None:
     train_loader = DataLoader(WindowDataset(X_train), batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(WindowDataset(X_val), batch_size=args.batch_size, shuffle=False)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TopoAutoencoder(input_dim=X.shape[1], latent_dim=args.latent_dim).to(device)
 
     history = train_loop(
@@ -157,7 +191,14 @@ def main() -> None:
     )
 
     (output_dir / "train_history.json").write_text(json.dumps(history, indent=2))
-    config = vars(args)
+    config = {}
+    for k, v in vars(args).items():
+        if isinstance(v, Path):
+            config[k] = str(v)
+        elif isinstance(v, list):
+            config[k] = [str(item) for item in v]
+        else:
+            config[k] = v
     (output_dir / "topoae_config.json").write_text(json.dumps(config, indent=2))
 
 
