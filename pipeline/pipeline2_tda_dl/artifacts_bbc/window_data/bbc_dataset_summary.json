@@ -1,0 +1,80 @@
+{
+  "all": {
+    "num_records": 161866,
+    "videos": {
+      "bbc_01": 14766,
+      "bbc_02": 14414,
+      "bbc_03": 14776,
+      "bbc_04": 14706,
+      "bbc_05": 14761,
+      "bbc_06": 14788,
+      "bbc_07": 14778,
+      "bbc_08": 14761,
+      "bbc_09": 14761,
+      "bbc_10": 14666,
+      "bbc_11": 14689
+    },
+    "labels": {
+      "0": 137773,
+      "1": 24093
+    },
+    "label_names": {
+      "__background__": 137773,
+      "__transition__": 24093
+    },
+    "positive_ratio": 0.14884534120815984
+  },
+  "train": {
+    "num_records": 102989,
+    "videos": {
+      "bbc_01": 14766,
+      "bbc_02": 14414,
+      "bbc_03": 14776,
+      "bbc_04": 14706,
+      "bbc_05": 14761,
+      "bbc_06": 14788,
+      "bbc_07": 14778
+    },
+    "labels": {
+      "0": 86923,
+      "1": 16066
+    },
+    "label_names": {
+      "__background__": 86923,
+      "__transition__": 16066
+    },
+    "positive_ratio": 0.1559972424239482
+  },
+  "val": {
+    "num_records": 29522,
+    "videos": {
+      "bbc_08": 14761,
+      "bbc_09": 14761
+    },
+    "labels": {
+      "0": 25662,
+      "1": 3860
+    },
+    "label_names": {
+      "__background__": 25662,
+      "__transition__": 3860
+    },
+    "positive_ratio": 0.13074994919043426
+  },
+  "test": {
+    "num_records": 29355,
+    "videos": {
+      "bbc_10": 14666,
+      "bbc_11": 14689
+    },
+    "labels": {
+      "0": 25188,
+      "1": 4167
+    },
+    "label_names": {
+      "__background__": 25188,
+      "__transition__": 4167
+    },
+    "positive_ratio": 0.14195196729688297
+  }
+}

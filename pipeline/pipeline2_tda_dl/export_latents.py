@@ -106,8 +106,10 @@ def main() -> None:
     commercial_count = len(list(commercials_dir.glob("*_latents.npz")))
     print(f"[export_latents] tv files: {tv_count}")
     print(f"[export_latents] commercial files: {commercial_count}")
+    if tv_count == 0:
+        raise RuntimeError("No se exportaron latentes de tv; revise source_type/video_name")
     if commercial_count == 0:
-        raise RuntimeError("No se exportaron latentes de commercials; revise source_type/video_name")
+        print("[export_latents] warning: no commercials latents exported (dataset tv-only)")
 
 
 if __name__ == "__main__":

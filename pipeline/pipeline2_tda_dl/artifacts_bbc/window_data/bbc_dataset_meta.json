@@ -1,0 +1,9 @@
+{
+  "window_sec": 2.0,
+  "stride_frames": 1,
+  "boundary_tolerance_sec": 0.5,
+  "label_map": {
+    "__background__": 0,
+    "__transition__": 1
+  }
+}

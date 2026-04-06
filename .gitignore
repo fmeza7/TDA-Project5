@@ -2,3 +2,6 @@
 REPORT_TDA.md
 
 /data
+__pycache__/
+*.pyc
+pipeline/pipeline2_tda_dl/bbc-planet-earth/

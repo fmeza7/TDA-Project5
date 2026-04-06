@@ -1,0 +1,19 @@
+{
+  "train_videos": [
+    "bbc_01",
+    "bbc_02",
+    "bbc_03",
+    "bbc_04",
+    "bbc_05",
+    "bbc_06",
+    "bbc_07"
+  ],
+  "val_videos": [
+    "bbc_08",
+    "bbc_09"
+  ],
+  "test_videos": [
+    "bbc_10",
+    "bbc_11"
+  ]
+}

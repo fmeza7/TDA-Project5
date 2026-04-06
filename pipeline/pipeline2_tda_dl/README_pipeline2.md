@@ -93,3 +93,103 @@ python evaluar-v2.py pipeline/pipeline2_tda_dl/artifacts/detecciones/detecciones
 - tqdm / rich opcional para barras de progreso
 
 > Nota: este pipeline es independiente del pipeline de k-NN original. Ambos pueden convivir y producir detecciones paralelas.
+
+## Adaptación BBC Planet Earth (detección de transiciones)
+
+Para el dataset BBC (shots), la tarea cambia desde clasificación de comerciales a detección binaria de transiciones entre tomas (`__transition__` vs `__background__`).
+
+### 1) Preprocesamiento cúbico (videos BBC)
+
+```bash
+python -m pipeline.pipeline2_tda_dl.bbc_cubical_preprocessing \
+  --videos_dir pipeline/pipeline2_tda_dl/bbc-planet-earth \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical \
+  --sample_fps 5.0
+```
+
+### 2) Curvas topológicas
+
+```bash
+python -m pipeline.feature_extraction.topological_curves \
+  --input_dir pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves \
+  --smooth_window 3 \
+  --z_window 15
+```
+
+### 3) Construcción de datasets (train/val/test por episodio)
+
+```bash
+python -m pipeline.pipeline2_tda_dl.bbc_transition_dataset \
+  --curves_dir pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves \
+  --preproc_manifest pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/manifest.json \
+  --videos_dir pipeline/pipeline2_tda_dl/bbc-planet-earth \
+  --annotations_dir pipeline/pipeline2_tda_dl/bbc-planet-earth \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/window_data \
+  --window_sec 2.0 \
+  --stride_frames 1 \
+  --boundary_tolerance_sec 0.5
+```
+
+`bbc_transition_dataset` genera:
+- `topoae_dataset.npz` (train+val)
+- `temporal_dataset.npz` (todos los episodios)
+- `temporal_dataset_test.npz` (solo test)
+- `bbc_split.json` con el split por video
+
+### 4) TopoAE + export de latentes
+
+Usar los videos del split en `bbc_split.json` para `--train_tv` y `--val_tv`.
+
+```bash
+python -m pipeline.pipeline2_tda_dl.train_topoae \
+  --window_data pipeline/pipeline2_tda_dl/artifacts_bbc/window_data/topoae_dataset.npz \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/topoae \
+  --latent_dim 32 \
+  --lambda_topo 0.5 \
+  --batch_size 64 \
+  --lr 1e-3 \
+  --epochs 100 \
+  --train_tv bbc_01 bbc_02 bbc_03 bbc_04 bbc_05 bbc_06 bbc_07 \
+  --val_tv bbc_08 bbc_09
+
+python -m pipeline.pipeline2_tda_dl.export_latents \
+  --window_data pipeline/pipeline2_tda_dl/artifacts_bbc/window_data/temporal_dataset.npz \
+  --topoae_dir pipeline/pipeline2_tda_dl/artifacts_bbc/topoae \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/latents
+```
+
+### 5) Entrenamiento temporal (binario)
+
+```bash
+python -m pipeline.pipeline2_tda_dl.train_temporal_model \
+  --latents_dir pipeline/pipeline2_tda_dl/artifacts_bbc/latents \
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_bbc/temporal_model \
+  --seq_len 9 \
+  --batch_size 64 \
+  --lr 1e-4 \
+  --epochs 50 \
+  --train_tv bbc_01 bbc_02 bbc_03 bbc_04 bbc_05 bbc_06 bbc_07 \
+  --val_tv bbc_08 bbc_09
+```
+
+### 6) Inferencia en test + evaluación de boundaries
+
+```bash
+python -m pipeline.pipeline2_tda_dl.infer_temporal_boundaries \
+  --latents_dir pipeline/pipeline2_tda_dl/artifacts_bbc/latents \
+  --temporal_model_dir pipeline/pipeline2_tda_dl/artifacts_bbc/temporal_model \
+  --target_videos bbc_10 bbc_11 \
+  --output pipeline/pipeline2_tda_dl/artifacts_bbc/detections/boundaries_test.txt \
+  --score_threshold 0.5 \
+  --merge_gap_sec 0.8
+
+python -m pipeline.pipeline2_tda_dl.evaluate_temporal_boundaries \
+  --predictions pipeline/pipeline2_tda_dl/artifacts_bbc/detections/boundaries_test.txt \
+  --videos_dir pipeline/pipeline2_tda_dl/bbc-planet-earth \
+  --annotations_dir pipeline/pipeline2_tda_dl/bbc-planet-earth \
+  --preproc_manifest pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/manifest.json \
+  --target_videos bbc_10 bbc_11 \
+  --tolerance_sec 0.5 \
+  --output_json pipeline/pipeline2_tda_dl/artifacts_bbc/detections/boundaries_test_eval.json
+```

@@ -1,0 +1,68 @@
+[
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_01.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_01_curves.npz",
+    "frames": 14775
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_02.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_02_curves.npz",
+    "frames": 14423
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_03.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_03_curves.npz",
+    "frames": 14785
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_04.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_04_curves.npz",
+    "frames": 14715
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_05.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_05_curves.npz",
+    "frames": 14770
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_06.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_06_curves.npz",
+    "frames": 14797
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_07.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_07_curves.npz",
+    "frames": 14787
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_08.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_08_curves.npz",
+    "frames": 14770
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_09.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_09_curves.npz",
+    "frames": 14770
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_10.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_10_curves.npz",
+    "frames": 14675
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_cubical/tv/bbc_11.npz",
+    "output_path": "pipeline/pipeline2_tda_dl/artifacts_bbc/outputs_curves/tv/bbc_11_curves.npz",
+    "frames": 14698
+  }
+]

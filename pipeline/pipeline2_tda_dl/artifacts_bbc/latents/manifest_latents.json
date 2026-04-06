@@ -1,0 +1,57 @@
+[
+  {
+    "video_name": "bbc_01",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_01_latents.npz"
+  },
+  {
+    "video_name": "bbc_02",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_02_latents.npz"
+  },
+  {
+    "video_name": "bbc_03",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_03_latents.npz"
+  },
+  {
+    "video_name": "bbc_04",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_04_latents.npz"
+  },
+  {
+    "video_name": "bbc_05",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_05_latents.npz"
+  },
+  {
+    "video_name": "bbc_06",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_06_latents.npz"
+  },
+  {
+    "video_name": "bbc_07",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_07_latents.npz"
+  },
+  {
+    "video_name": "bbc_08",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_08_latents.npz"
+  },
+  {
+    "video_name": "bbc_09",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_09_latents.npz"
+  },
+  {
+    "video_name": "bbc_10",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_10_latents.npz"
+  },
+  {
+    "video_name": "bbc_11",
+    "source_type": "tv",
+    "path": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents/tv/bbc_11_latents.npz"
+  }
+]

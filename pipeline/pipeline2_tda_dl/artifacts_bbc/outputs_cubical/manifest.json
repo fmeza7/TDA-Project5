@@ -1,0 +1,123 @@
+[
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_01.mp4",
+    "output_path": "tv/bbc_01.npz",
+    "num_frames": 14775,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2955.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_02.mp4",
+    "output_path": "tv/bbc_02.npz",
+    "num_frames": 14423,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2884.6,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_03.mp4",
+    "output_path": "tv/bbc_03.npz",
+    "num_frames": 14785,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2957.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_04.mp4",
+    "output_path": "tv/bbc_04.npz",
+    "num_frames": 14715,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2943.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_05.mp4",
+    "output_path": "tv/bbc_05.npz",
+    "num_frames": 14770,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2954.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_06.mp4",
+    "output_path": "tv/bbc_06.npz",
+    "num_frames": 14797,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2959.4,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_07.mp4",
+    "output_path": "tv/bbc_07.npz",
+    "num_frames": 14787,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2957.4,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_08.mp4",
+    "output_path": "tv/bbc_08.npz",
+    "num_frames": 14770,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2954.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_09.mp4",
+    "output_path": "tv/bbc_09.npz",
+    "num_frames": 14770,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2954.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_10.mp4",
+    "output_path": "tv/bbc_10.npz",
+    "num_frames": 14675,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2935.0,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  },
+  {
+    "category": "tv",
+    "source_path": "pipeline/pipeline2_tda_dl/bbc-planet-earth/bbc_11.mp4",
+    "output_path": "tv/bbc_11.npz",
+    "num_frames": 14698,
+    "native_fps": 25.0,
+    "sampled_fps": 5.0,
+    "duration_sec": 2939.68,
+    "sample_stride_frames": 5.0,
+    "feature_dim": 524
+  }
+]

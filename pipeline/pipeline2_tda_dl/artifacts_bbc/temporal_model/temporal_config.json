@@ -1,0 +1,23 @@
+{
+  "latents_dir": "pipeline/pipeline2_tda_dl/artifacts_bbc/latents",
+  "output_dir": "pipeline/pipeline2_tda_dl/artifacts_bbc/temporal_model",
+  "seq_len": 9,
+  "batch_size": 256,
+  "lr": 0.0001,
+  "epochs": 12,
+  "weight_decay": 0.0,
+  "train_tv": [
+    "bbc_01",
+    "bbc_02",
+    "bbc_03",
+    "bbc_04",
+    "bbc_05",
+    "bbc_06",
+    "bbc_07"
+  ],
+  "val_tv": [
+    "bbc_08",
+    "bbc_09"
+  ],
+  "include_commercials": false
+}
