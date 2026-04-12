@@ -13,6 +13,7 @@ Este script no usa audio ni embeddings CNN; toda la información proviene de fra
 """
 from __future__ import annotations
 
+import cv2
 import argparse
 import json
 import math
@@ -46,18 +47,45 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Preprocesamiento de video mediante complejos cúbicos (sin audio/CNN)"
     )
-    parser.add_argument("--tv_dir", type=str, required=True, help="Directorio que contiene los videos de televisión")
-    parser.add_argument("--commercials_dir", type=str, required=True, help="Directorio con los comerciales individuales")
+    parser.add_argument(
+        "--tv_dir",
+        type=str,
+        required=True,
+        help="Directorio que contiene los videos de televisión",
+    )
+    parser.add_argument(
+        "--commercials_dir",
+        type=str,
+        required=True,
+        help="Directorio con los comerciales individuales",
+    )
     parser.add_argument(
         "--output_dir",
         type=str,
         default="pipeline_outputs/cubical",
         help="Ruta donde se guardarán los NPZ generados",
     )
-    parser.add_argument("--sample_fps", type=float, default=3.0, help="FPS objetivo para todos los videos")
-    parser.add_argument("--grid_size", type=int, default=48, help="Lado de la grilla normalizada por frame")
-    parser.add_argument("--min_persistence", type=float, default=0.005, help="Filtro mínimo de persistencia en GUDHI")
-    parser.add_argument("--overwrite", action="store_true", help="Reprocesa aunque existan NPZ previos")
+    parser.add_argument(
+        "--sample_fps",
+        type=float,
+        default=3.0,
+        help="FPS objetivo para todos los videos",
+    )
+    parser.add_argument(
+        "--grid_size",
+        type=int,
+        default=48,
+        help="Lado de la grilla normalizada por frame",
+    )
+    parser.add_argument(
+        "--min_persistence",
+        type=float,
+        default=0.005,
+        help="Filtro mínimo de persistencia en GUDHI",
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Reprocesa aunque existan NPZ previos"
+    )
     return parser.parse_args()
 
 
@@ -69,7 +97,9 @@ def iter_videos(root: Path) -> Iterable[Path]:
             yield path
 
 
-def frame_indices_for_sampling(native_fps: float, target_fps: float, total_frames: int) -> Tuple[List[int], List[float]]:
+def frame_indices_for_sampling(
+    native_fps: float, target_fps: float, total_frames: int
+) -> Tuple[List[int], List[float]]:
     if native_fps <= 0 or target_fps <= 0:
         raise ValueError("FPS nativo/objetivo inválido")
     stride = native_fps / target_fps
@@ -118,11 +148,17 @@ def cubical_descriptor(
     pi_transform_h0: PersistenceImage,
     pi_transform_h1: PersistenceImage,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    resized = cv2.resize(frame_gray, (grid_size, grid_size), interpolation=cv2.INTER_AREA).astype(np.float32)
+    resized = cv2.resize(
+        frame_gray, (grid_size, grid_size), interpolation=cv2.INTER_AREA
+    ).astype(np.float32)
     normalized = (resized - resized.min()) / (np.ptp(resized) + 1e-6)
 
-    complex_ = gd.CubicalComplex(dimensions=normalized.shape, top_dimensional_cells=normalized.ravel())
-    diag_raw = complex_.persistence(homology_coeff_field=2, min_persistence=min_persistence)
+    complex_ = gd.CubicalComplex(
+        dimensions=normalized.shape, top_dimensional_cells=normalized.ravel()
+    )
+    diag_raw = complex_.persistence(
+        homology_coeff_field=2, min_persistence=min_persistence
+    )
     diag_h0, diag_h1 = [], []
     for dim, interval in diag_raw:
         if not np.isfinite(interval[1]):
@@ -131,8 +167,16 @@ def cubical_descriptor(
             diag_h0.append(interval)
         elif dim == 1:
             diag_h1.append(interval)
-    diag_h0 = np.array(diag_h0, dtype=np.float32) if diag_h0 else np.zeros((0, 2), dtype=np.float32)
-    diag_h1 = np.array(diag_h1, dtype=np.float32) if diag_h1 else np.zeros((0, 2), dtype=np.float32)
+    diag_h0 = (
+        np.array(diag_h0, dtype=np.float32)
+        if diag_h0
+        else np.zeros((0, 2), dtype=np.float32)
+    )
+    diag_h1 = (
+        np.array(diag_h1, dtype=np.float32)
+        if diag_h1
+        else np.zeros((0, 2), dtype=np.float32)
+    )
 
     stats_h0 = diagram_stats(diag_h0)
     stats_h1 = diagram_stats(diag_h1)
@@ -168,7 +212,14 @@ def process_video(
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = total_frames / native_fps if native_fps > 0 else 0.0
 
-    indices, timestamps = frame_indices_for_sampling(native_fps, args.sample_fps, total_frames)
+    indices, timestamps = frame_indices_for_sampling(
+        native_fps, args.sample_fps, total_frames
+    )
+
+    # Listas para guardar solo los frames que efectivamente procesamos
+    valid_indices: List[int] = []
+    valid_timestamps: List[float] = []
+
     descriptors: List[np.ndarray] = []
     h0_births: List[float] = []
     h0_deaths: List[float] = []
@@ -177,16 +228,39 @@ def process_video(
     h1_deaths: List[float] = []
     h1_offsets: List[int] = [0]
 
-    for idx in indices:
+    prev_gray = None
+
+    for i, idx in enumerate(indices):
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
         ok, frame = cap.read()
         if not ok:
             break
+
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        feature_vec, diag_h0, diag_h1 = cubical_descriptor(
-            gray, args.grid_size, args.min_persistence, pi_transform_h0, pi_transform_h1
+
+        if prev_gray is None:
+            prev_gray = gray
+            continue  # Se salta el cálculo en el primer frame
+
+        # Cálculo de Flujo Óptico y magnitud
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0
         )
+        mag, _ = cv2.cartToPolar(flow[..., 0], flow[..., 1])
+        mag_norm = cv2.normalize(mag, None, 0, 1, cv2.NORM_MINMAX)
+
+        feature_vec, diag_h0, diag_h1 = cubical_descriptor(
+            mag_norm,
+            args.grid_size,
+            args.min_persistence,
+            pi_transform_h0,
+            pi_transform_h1,
+        )
+
         descriptors.append(feature_vec)
+        valid_indices.append(idx)
+        valid_timestamps.append(timestamps[i])
+
         if diag_h0.size:
             h0_births.extend(diag_h0[:, 0].tolist())
             h0_deaths.extend(diag_h0[:, 1].tolist())
@@ -195,6 +269,8 @@ def process_video(
             h1_births.extend(diag_h1[:, 0].tolist())
             h1_deaths.extend(diag_h1[:, 1].tolist())
         h1_offsets.append(len(h1_births))
+
+        prev_gray = gray
 
     cap.release()
 
@@ -206,8 +282,8 @@ def process_video(
         features = np.zeros((0, total_dim), dtype=np.float32)
 
     payload = {
-        "timestamps_sec": np.asarray(timestamps, dtype=np.float32),
-        "frame_indices": np.asarray(indices, dtype=np.int32),
+        "timestamps_sec": np.asarray(valid_timestamps, dtype=np.float32),
+        "frame_indices": np.asarray(valid_indices, dtype=np.int32),
         "tda_features": features,
         "diag_h0_births": np.asarray(h0_births, dtype=np.float32),
         "diag_h0_deaths": np.asarray(h0_deaths, dtype=np.float32),
@@ -237,8 +313,16 @@ def process_video(
         native_fps=float(native_fps),
         sampled_fps=float(args.sample_fps),
         duration_sec=float(duration),
-        sample_stride_frames=float(native_fps / args.sample_fps if args.sample_fps > 0 else 0.0),
-        feature_dim=int(features.shape[1]) if features.size else int(pi_transform_h0.resolution[0] * pi_transform_h0.resolution[1] * 2 + 12),
+        sample_stride_frames=float(
+            native_fps / args.sample_fps if args.sample_fps > 0 else 0.0
+        ),
+        feature_dim=(
+            int(features.shape[1])
+            if features.size
+            else int(
+                pi_transform_h0.resolution[0] * pi_transform_h0.resolution[1] * 2 + 12
+            )
+        ),
     )
     return summary
 
@@ -279,7 +363,12 @@ def main() -> None:
         for video_path in iter_videos(directory):
             print(f"[{category}] Procesando {video_path.name}")
             summary = process_video(
-                video_path, category, output_root, args, pi_transform_h0, pi_transform_h1
+                video_path,
+                category,
+                output_root,
+                args,
+                pi_transform_h0,
+                pi_transform_h1,
             )
             if summary:
                 summaries.append(summary)

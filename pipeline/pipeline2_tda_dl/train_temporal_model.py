@@ -19,7 +19,7 @@ from .temporal_dataset import (
     split_by_videos,
     summarize_records,
 )
-from .temporal_model import TemporalClassifier
+from .temporal_model import TemporalTransformer # Se asume el nombre actualizado de la clase
 
 
 def resolve_device() -> torch.device:
@@ -30,8 +30,10 @@ def resolve_device() -> torch.device:
     return torch.device("cpu")
 
 
-def _build_class_weights(labels: List[int], num_classes: int) -> torch.Tensor:
-    counts = np.bincount(labels, minlength=num_classes).astype(np.float32)
+def _build_class_weights(labels_list: List[np.ndarray], num_classes: int) -> torch.Tensor:
+    # Como labels_list es una lista de arreglos (una etiqueta por frame), los aplanamos
+    flat_labels = np.concatenate(labels_list)
+    counts = np.bincount(flat_labels, minlength=num_classes).astype(np.float32)
     counts[counts == 0] = 1.0
     weights = counts.sum() / counts
     return torch.from_numpy(weights)
@@ -42,11 +44,14 @@ def oversample_minority_records(records: List["SequenceRecord"], min_positive_pe
 
     by_label = defaultdict(list)
     for rec in records:
-        by_label[rec.label_id].append(rec)
+        # Usamos el frame central para definir la "clase principal" de la ventana para el sobremuestreo
+        center_idx = len(rec.label_id) // 2
+        primary_label = int(rec.label_id[center_idx])
+        by_label[primary_label].append(rec)
 
     new_records = list(records)
     for label_id, items in by_label.items():
-        if label_id == 0:
+        if label_id == 0:  # No sobremuestrear el fondo
             continue
         if 0 < len(items) < min_positive_per_class:
             extra = min_positive_per_class - len(items)
@@ -55,10 +60,10 @@ def oversample_minority_records(records: List["SequenceRecord"], min_positive_pe
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Entrenar modelo temporal Transformer")
+    parser = argparse.ArgumentParser(description="Entrenar modelo temporal Transformer para segmentación densa")
     parser.add_argument("--latents_dir", type=Path, required=True)
     parser.add_argument("--output_dir", type=Path, required=True)
-    parser.add_argument("--seq_len", type=int, default=9)
+    parser.add_argument("--seq_len", type=int, default=15) # Ajustado a un valor más lógico para acciones
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--epochs", type=int, default=50)
@@ -83,9 +88,11 @@ def main() -> None:
         print(f"[temporal] videos present: {unique_videos}")
     if not records:
         raise RuntimeError("No se generaron secuencias para entrenamiento")
+        
     train_records, val_records = split_by_videos(records, args.train_tv, args.val_tv)
     print("[temporal] train summary:", summarize_records(train_records))
     print("[temporal] val summary:", summarize_records(val_records))
+    
     train_records = oversample_minority_records(train_records, min_positive_per_class=500)
     print("[temporal] train summary after oversampling:", summarize_records(train_records))
 
@@ -97,12 +104,15 @@ def main() -> None:
     train_dataset = TemporalSequenceDataset(train_records)
     val_dataset = TemporalSequenceDataset(val_records)
     latent_dim = train_records[0].seq.shape[-1]
-    num_classes = int(max(rec.label_id for rec in records) + 1)
+    
+    # max() iterando sobre el np.max de cada arreglo de labels
+    num_classes = int(max(np.max(rec.label_id) for rec in records) + 1)
 
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
-    model = TemporalClassifier(latent_dim=latent_dim, num_classes=num_classes, seq_len=args.seq_len).to(device)
+    model = TemporalTransformer(input_dim=latent_dim, num_classes=num_classes).to(device)
+    
     class_weights = _build_class_weights([rec.label_id for rec in train_records], num_classes).to(device)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -118,10 +128,15 @@ def main() -> None:
         losses = []
         for seq, label in train_loader:
             seq = seq.to(device)
-            label = label.to(device)
+            label = label.to(device) # shape: (batch_size, seq_len)
+            
             optimizer.zero_grad()
-            logits = model(seq)
-            loss = criterion(logits, label)
+            logits = model(seq) # shape: (batch_size, seq_len, num_classes)
+            
+            # Transponer para CrossEntropyLoss: (batch_size, num_classes, seq_len)
+            logits_ce = logits.transpose(1, 2)
+            
+            loss = criterion(logits_ce, label)
             loss.backward()
             optimizer.step()
             losses.append(loss.item())
@@ -135,17 +150,28 @@ def main() -> None:
             for seq, label in val_loader:
                 seq = seq.to(device)
                 label = label.to(device)
+                
                 logits = model(seq)
-                loss = criterion(logits, label)
+                logits_ce = logits.transpose(1, 2)
+                
+                loss = criterion(logits_ce, label)
                 val_losses.append(loss.item())
-                preds.extend(torch.argmax(logits, dim=1).cpu().tolist())
-                targets.extend(label.cpu().tolist())
+                
+                # Aplanar las predicciones y targets para calcular métricas frame a frame
+                pred_frames = torch.argmax(logits, dim=2).flatten().cpu().tolist()
+                target_frames = label.flatten().cpu().tolist()
+                
+                preds.extend(pred_frames)
+                targets.extend(target_frames)
+                
         avg_val = float(np.mean(val_losses))
         history["val_loss"].append(avg_val)
+        
         macro_f1 = f1_score(targets, preds, average="macro", zero_division=0)
         weighted_f1 = f1_score(targets, preds, average="weighted", zero_division=0)
         history["val_macro_f1"].append(macro_f1)
         history["val_weighted_f1"].append(weighted_f1)
+        
         acc = accuracy_score(targets, preds)
         history["val_accuracy"].append(acc)
 
@@ -170,7 +196,7 @@ def main() -> None:
             f"[temporal] epoch={epoch}/{args.epochs} "
             f"train_loss={history['train_loss'][-1]:.6f} "
             f"val_loss={avg_val:.6f} "
-            f"val_acc={acc:.4f} "
+            f"val_acc(MoF)={acc:.4f} "
             f"val_macro_f1={macro_f1:.4f} "
             f"val_weighted_f1={weighted_f1:.4f}"
         )
@@ -178,10 +204,17 @@ def main() -> None:
     config = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}
     (output_dir / "temporal_config.json").write_text(json.dumps(config, indent=2))
     (output_dir / "train_history.json").write_text(json.dumps(history, indent=2))
-    # save label names
-    id_to_name = {rec.label_id: rec.label_name for rec in records if rec.label_name}
+    
+    # Construir mapa de nombres de clase iterando sobre las secuencias
+    id_to_name = {}
+    for rec in records:
+        for lbl_id, lbl_name in zip(rec.label_id, rec.label_name):
+            if lbl_name:
+                id_to_name[int(lbl_id)] = lbl_name
+                
     class_map = {int(idx): id_to_name.get(idx, "__background__" if idx == 0 else f"class_{idx}") for idx in range(num_classes)}
     (output_dir / "class_map.json").write_text(json.dumps(class_map, indent=2))
+    
     split_summary = {
         "train": summarize_records(train_records),
         "val": summarize_records(val_records),
