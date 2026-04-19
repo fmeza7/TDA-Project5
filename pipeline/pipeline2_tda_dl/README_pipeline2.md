@@ -176,3 +176,18 @@ Notas de protocolo:
 - `label_map.json` se construye solo con labels de `train` para evitar leakage de test.
 - El split debe ser por `subject_id` (no por ventanas).
 - `valid_mask` se guarda desde el inicio para soportar padding/batches variables en la etapa de modelado temporal.
+
+## Experimento exploratorio de descriptores TDA
+
+Se agrego el notebook:
+
+- `pipeline/pipeline2_tda_dl/experiments/breakfast_tda_descriptor_experiment.ipynb`
+
+Este experimento analiza si las senales topologicas detectan boundaries de segmentacion **a priori** (sin red temporal), con:
+
+- visualizacion por video de descriptores y boundaries GT,
+- score de separabilidad por descriptor,
+- curva precision-recall de deteccion de boundaries basada en picos,
+- PCA de descriptores por action unit,
+- export de graficos y `experiment_summary.json` en:
+  `pipeline/pipeline2_tda_dl/artifacts_breakfast_experiments/`.
