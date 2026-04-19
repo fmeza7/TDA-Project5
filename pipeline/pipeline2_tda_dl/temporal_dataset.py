@@ -1,224 +1,92 @@
 from __future__ import annotations
-
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Tuple
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from .labels import BACKGROUND_ID
-
-
-def _norm_name(x) -> str:
-    if isinstance(x, bytes):
-        x = x.decode("utf-8")
-    x = str(x)
-    stem = Path(x).stem
-    stem = stem.replace("_curves", "").replace("_latents", "")
-    return stem
-
-
 @dataclass
 class SequenceRecord:
     seq: np.ndarray
-    label_id: np.ndarray  # Modificado: Ahora es un arreglo de etiquetas por frame
-    label_name: List[str] # Modificado: Lista de nombres por frame
+    label_id: np.ndarray
+    label_name: List[str]
     video_name: str
     center_time: float
     start_time: float
     end_time: float
     source_type: str
 
-
 class TemporalSequenceDataset(Dataset):
-    def __init__(self, records: List[SequenceRecord]):
-        self.records = records
-
-    def __len__(self) -> int:
-        return len(self.records)
-
+    def __init__(self, records: List[SequenceRecord]): self.records = records
+    def __len__(self) -> int: return len(self.records)
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
         rec = self.records[idx]
-        seq = torch.from_numpy(rec.seq.astype(np.float32))
-        # Modificado: La etiqueta ahora es un tensor 1D de tamaño [seq_len]
-        label = torch.from_numpy(rec.label_id.astype(np.int64))
-        return seq, label
-
-    def video_names(self) -> np.ndarray:
-        return np.array([rec.video_name for rec in self.records])
-
+        return torch.from_numpy(rec.seq.astype(np.float32)), torch.from_numpy(rec.label_id.astype(np.int64))
 
 def _load_latent_file(path: Path) -> Dict[str, np.ndarray]:
     data = np.load(path, allow_pickle=True)
-    order = np.argsort(data["center_times"])
-    payload = {k: data[k][order] for k in data.files if k not in {"video_name", "source_type"}}
-    video_name_raw = data["video_name"] if np.ndim(data["video_name"]) == 0 else data["video_name"][0]
-    source_type_raw = data["source_type"] if np.ndim(data["source_type"]) == 0 else data["source_type"][0]
-    payload["video_name"] = _norm_name(video_name_raw)
-    payload["source_type"] = _norm_name(source_type_raw)
+    if "center_times" in data:
+        order = np.argsort(data["center_times"])
+        payload = {k: data[k][order] for k in data.files if k not in {"video_name", "source_type"}}
+    else:
+        payload = {k: data[k] for k in data.files if k not in {"video_name", "source_type"}}
+    payload["video_name"] = str(data["video_name"] if np.ndim(data["video_name"]) == 0 else data["video_name"][0])
     return payload
 
-
-def _pad_sequence(z: np.ndarray, target_len: int) -> np.ndarray:
-    if z.shape[0] >= target_len:
-        return z[:target_len]
-    pad_count = target_len - z.shape[0]
-    pad_block = np.repeat(z[-1:, :], pad_count, axis=0)
-    return np.concatenate([z, pad_block], axis=0)
-
-
-def _pad_labels(y: np.ndarray, target_len: int) -> np.ndarray:
-    """Rellena el arreglo de etiquetas repitiendo la última clase si es necesario."""
-    if y.shape[0] >= target_len:
-        return y[:target_len]
-    pad_count = target_len - y.shape[0]
-    pad_block = np.full((pad_count,), y[-1], dtype=y.dtype)
-    return np.concatenate([y, pad_block], axis=0)
-
-
-def build_sequence_records(
-    latents_dir: Path,
-    seq_len: int,
-    min_label_id: int = 0,
-    include_commercials: bool = True,
-) -> List[SequenceRecord]:
+def build_sequence_records(latents_dir: Path, seq_len: int, min_label_id: int = 0) -> List[SequenceRecord]:
     records: List[SequenceRecord] = []
-    for path in sorted(latents_dir.glob("tv/*_latents.npz")):
+    # Busca recursivamente sin importar las carpetas intermedias
+    for path in sorted(latents_dir.rglob("*_latents.npz")):
         payload = _load_latent_file(path)
-        z = payload["z_latent"]
-        label_ids = payload["label_id"]
-        label_names = payload["label_name"]
-        center_times = payload["center_times"]
-        start_times = payload["start_times"]
-        end_times = payload["end_times"]
+        z, label_ids, label_names = payload["z_latent"], payload["label_id"], payload["label_name"]
         video_name = payload["video_name"]
-        if z.shape[0] < seq_len:
-            continue
+        
+        # Generar timestamps ficticios si no están (para compatibilidad con scripts antiguos)
+        center_times = payload.get("center_times", np.zeros(len(z)))
+        start_times = payload.get("start_times", np.zeros(len(z)))
+        end_times = payload.get("end_times", np.zeros(len(z)))
+
+        if z.shape[0] < seq_len: continue
+
         for start in range(0, z.shape[0] - seq_len + 1):
             end_idx = start + seq_len
             mid = start + seq_len // 2
             
-            # Filtrar por el frame central para asegurar que la ventana es representativa de la acción
-            if int(label_ids[mid]) < min_label_id:
-                continue
-                
-            # Modificado: Se extrae el vector completo de etiquetas para la secuencia
-            seq_label_ids = label_ids[start:end_idx]
-            seq_label_names = [str(n) for n in label_names[start:end_idx]]
-            
-            records.append(
-                SequenceRecord(
-                    seq=z[start:end_idx],
-                    label_id=seq_label_ids,
-                    label_name=seq_label_names,
-                    video_name=video_name,
-                    center_time=float(center_times[mid]),
-                    start_time=float(start_times[mid]),
-                    end_time=float(end_times[mid]),
-                    source_type="tv",
-                )
-            )
-            
-    if include_commercials:
-        for path in sorted(latents_dir.glob("commercials/*_latents.npz")):
-            payload = _load_latent_file(path)
-            z = payload["z_latent"]
-            if z.size == 0:
-                continue
-            label_ids = payload["label_id"]
-            label_names = payload["label_name"]
-            center_times = payload["center_times"]
-            start_times = payload["start_times"]
-            end_times = payload["end_times"]
-            video_name = payload["video_name"]
-            
-            mid_initial = min(len(label_ids) - 1, len(label_ids) // 2) if label_ids.size else 0
-            label_id_center = int(label_ids[mid_initial]) if label_ids.size else BACKGROUND_ID
-            
-            if label_id_center < min_label_id:
-                continue
-                
-            if z.shape[0] < seq_len:
-                seq = _pad_sequence(z, seq_len)
-                seq_labels = _pad_labels(label_ids, seq_len) if label_ids.size else np.full((seq_len,), BACKGROUND_ID)
-                seq_names = [str(label_names[0]) if label_names.size else ""] * seq_len
-                
-                if len(center_times):
-                    idx = min(len(center_times) - 1, max(0, len(center_times) // 2))
-                    center_time = float(center_times[idx])
-                else:
-                    center_time = 0.0
-                start_time = float(start_times[0]) if len(start_times) else 0.0
-                end_time = float(end_times[-1]) if len(end_times) else start_time
-                records.append(
-                    SequenceRecord(
-                        seq=seq,
-                        label_id=seq_labels,
-                        label_name=seq_names,
-                        video_name=video_name,
-                        center_time=center_time,
-                        start_time=start_time,
-                        end_time=end_time,
-                        source_type="commercials",
-                    )
-                )
-                continue
-            for start in range(0, z.shape[0] - seq_len + 1):
-                end_idx = start + seq_len
-                mid = start + seq_len // 2
-                
-                seq_label_ids = label_ids[start:end_idx]
-                seq_label_names = [str(n) for n in label_names[start:end_idx]]
-                
-                records.append(
-                    SequenceRecord(
-                        seq=z[start:end_idx],
-                        label_id=seq_label_ids,
-                        label_name=seq_label_names,
-                        video_name=video_name,
-                        center_time=float(center_times[mid]),
-                        start_time=float(start_times[mid]),
-                        end_time=float(end_times[mid]),
-                        source_type="commercials",
-                    )
-                )
+            # Filtro opcional: ignorar ventanas donde el centro es menor a min_label_id (ej. ignorar puro SIL)
+            if int(label_ids[mid]) < min_label_id: continue
+
+            records.append(SequenceRecord(
+                seq=z[start:end_idx],
+                label_id=label_ids[start:end_idx],
+                label_name=[str(n) for n in label_names[start:end_idx]],
+                video_name=video_name,
+                center_time=float(center_times[mid]),
+                start_time=float(start_times[mid]),
+                end_time=float(end_times[mid]),
+                source_type=video_name.split("_")[0] # Guarda PXX como source
+            ))
     return records
 
+def split_by_videos(records: List[SequenceRecord], train_prefixes: Sequence[str], val_prefixes: Sequence[str]) -> Tuple[List[SequenceRecord], List[SequenceRecord]]:
+    if not records: raise RuntimeError("No hay records para hacer split")
+    
+    train_records, val_records = [], []
+    for rec in records:
+        # Se evalúa si el nombre del video empieza con alguno de los prefijos dados (ej. P03, P04...)
+        if any(rec.video_name.startswith(p) for p in train_prefixes):
+            train_records.append(rec)
+        elif any(rec.video_name.startswith(p) for p in val_prefixes):
+            val_records.append(rec)
 
-def split_by_videos(
-    records: List[SequenceRecord],
-    train_videos: Sequence[str],
-    val_videos: Sequence[str],
-) -> Tuple[List[SequenceRecord], List[SequenceRecord]]:
-    if not records:
-        raise RuntimeError("No hay records para hacer split")
+    return train_records, val_records
 
-    all_videos = sorted({_norm_name(rec.video_name) for rec in records})
-
-    train_set = {_norm_name(x) for x in train_videos} if train_videos else set()
-    val_set = {_norm_name(x) for x in val_videos} if val_videos else set()
-
-    if not train_set and not val_set:
-        if len(all_videos) < 2:
-            raise RuntimeError(f"No hay suficientes videos para split automático. all_videos={all_videos}")
-        val_set = {all_videos[-1]}
-        train_set = set(all_videos[:-1])
-    elif train_set and not val_set:
-        remaining = [v for v in all_videos if v not in train_set]
-        if not remaining:
-            raise RuntimeError(
-                f"No quedan videos para validación. all_videos={all_videos}, train_set={sorted(train_set)}"
-            )
-        val_set = {remaining[0]}
-    elif val_set and not train_set:
-        remaining = [v for v in all_videos if v not in val_set]
-        if not remaining:
-            raise RuntimeError(
-                f"No quedan videos para entrenamiento. all_videos={all_videos}, val_set={sorted(val_set)}"
-            )
-        train_set = set(remaining)
-
-    commercial_
+def summarize_records(records: List[SequenceRecord]) -> Dict:
+    by_video = Counter(rec.video_name for rec in records)
+    all_labels = np.concatenate([rec.label_id for rec in records]) if records else []
+    return {
+        "num_records": len(records),
+        "videos": dict(sorted(by_video.items())),
+        "labels": dict(sorted(Counter(all_labels).items())),
+    }

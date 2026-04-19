@@ -5,15 +5,9 @@ Generación de curvas topológicas a partir de los descriptores cúbicos por fra
 Entrada: NPZs producidos por pipeline/preprocessing/cubical_preprocessing.py.
 Salida: NPZs con señales 1D (curvas) que resumen la dinámica topológica por frame.
 
-Cada curva representa un indicador intuitivo:
-  - h0_count, h0_sum, h0_max, h0_std
-  - h1_count, h1_sum, h1_max, h1_std
-  - brightness_mean, brightness_std
-  - pi_h0_energy / pi_h1_energy (normas L2 por homología)
-  - combined_activity (h1_sum + pi_h1_energy) y su z-score asociado.
-
-Opcionalmente se puede aplicar un suavizado por ventana móvil para atenuar ruido
-frame a frame.
+Adaptado para el Breakfast Dataset:
+ - Búsqueda dinámica de carpetas por persona (ej. P03, P48).
+ - Arrastre automático de las etiquetas (label_id, label_name) para la siguiente etapa.
 """
 from __future__ import annotations
 
@@ -31,7 +25,7 @@ def parse_args() -> argparse.Namespace:
         "--input_dir",
         type=str,
         required=True,
-        help="Directorio raíz generado por el preprocesamiento cúbico (contiene subcarpetas tv/ y commercials/)",
+        help="Directorio raíz generado por el preprocesamiento (ej. outputs_cubical)",
     )
     parser.add_argument(
         "--output_dir",
@@ -59,14 +53,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--overwrite", action="store_true", help="Regenera curvas aunque exista el archivo destino")
     return parser.parse_args()
-
-
-def iter_npz_files(root: Path) -> Iterable[Path]:
-    if not root.exists():
-        return []
-    for path in sorted(root.glob("*.npz")):
-        if path.is_file():
-            yield path
 
 
 def moving_average(signal: np.ndarray, window: int) -> np.ndarray:
@@ -156,12 +142,18 @@ def process_video(
     if output_path.exists() and not overwrite:
         print(f"[skip] {output_path.name} existe")
         return {}
+        
     with np.load(npz_path) as data:
         timestamps = data["timestamps_sec"].astype(np.float32)
         features = data["tda_features"].astype(np.float32)
+        # Extraer etiquetas si existen (Modificación Clave)
+        label_id = data.get("label_id", None)
+        label_name = data.get("label_name", None)
+
     curves = compute_curves(features, pi_dim)
     if smooth_window > 1 and curves.size:
         curves = moving_average(curves, smooth_window)
+        
     labels = list(CURVE_LABELS)
     if curves.size:
         combined_idx = labels.index("combined_activity")
@@ -170,14 +162,23 @@ def process_video(
     else:
         curves = np.hstack([curves, np.zeros((curves.shape[0], 1), dtype=np.float32)])
     labels.append("combined_activity_z")
+    
     payload = {
         "timestamps_sec": timestamps[: curves.shape[0]],
         "curve_signals": curves,
         "curve_labels": np.array(labels, dtype=np.str_),
         "source_features": np.array([npz_path.name], dtype=np.str_),
     }
+    
+    # Re-inyectar las etiquetas en el nuevo archivo para no perderlas
+    if label_id is not None:
+        payload["label_id"] = label_id[: curves.shape[0]]
+    if label_name is not None:
+        payload["label_name"] = label_name[: curves.shape[0]]
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(output_path, **payload)
+    
     return {
         "source": str(npz_path),
         "output": str(output_path),
@@ -192,26 +193,30 @@ def main() -> None:
     output_root.mkdir(parents=True, exist_ok=True)
 
     summaries: List[Dict] = []
-    for category in ("tv", "commercials"):
-        in_dir = input_root / category
-        out_dir = output_root / category
-        for npz_path in iter_npz_files(in_dir):
-            out_path = out_dir / f"{npz_path.stem}_curves.npz"
-            res = process_video(
-                npz_path,
-                out_path,
-                args.smooth_window,
-                args.z_window,
-                args.pi_dim,
-                args.overwrite,
-            )
-            if res:
-                res["category"] = category
-                summaries.append(res)
+    
+    # Búsqueda dinámica en lugar de iterar por "tv" y "commercials"
+    for npz_path in sorted(input_root.rglob("*.npz")):
+        # Extraer la carpeta base (P03, P48, etc)
+        person_id = npz_path.parent.name
+        out_dir = output_root / person_id
+        
+        out_path = out_dir / f"{npz_path.stem}_curves.npz"
+        res = process_video(
+            npz_path,
+            out_path,
+            args.smooth_window,
+            args.z_window,
+            args.pi_dim,
+            args.overwrite,
+        )
+        if res:
+            res["person_id"] = person_id
+            summaries.append(res)
+            
     if summaries:
         manifest_path = output_root / "manifest_curves.json"
         json_ready = [
-            {"category": s["category"], "source_path": s["source"], "output_path": s["output"], "frames": s["frames"]}
+            {"person_id": s["person_id"], "source_path": s["source"], "output_path": s["output"], "frames": s["frames"]}
             for s in summaries
         ]
         with manifest_path.open("w", encoding="utf-8") as handle:

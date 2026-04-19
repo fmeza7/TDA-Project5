@@ -61,12 +61,13 @@ def main() -> None:
 
     output_dir = args.output_dir
     unique_sources = set()
+    
+    # Recolectar dinámicamente los prefijos de las personas (P03, P48, etc.)
     for st in source_types:
         norm = _norm_name(st)
-        if norm == "commercial":
-            norm = "commercials"
         unique_sources.add(norm)
-    for source_type in unique_sources | {"tv", "commercials"}:
+        
+    for source_type in unique_sources:
         (output_dir / source_type).mkdir(parents=True, exist_ok=True)
 
     grouped: Dict[Tuple[str, str], Dict[str, List]] = defaultdict(lambda: defaultdict(list))
@@ -75,39 +76,46 @@ def main() -> None:
         x = torch.from_numpy(((X[idx] - mean) / std).astype(np.float32)).unsqueeze(0).to(device)
         with torch.no_grad():
             z = model.encode(x).squeeze(0).detach().cpu().numpy()
+            
         source_type = _norm_name(source_types[idx])
         video_name = _norm_name(video_names[idx])
-        if source_type == "commercial":
-            source_type = "commercials"
         key = (source_type, video_name)
         target = grouped[key]
+        
         target.setdefault("z_latent", []).append(z)
         target.setdefault("center_times", []).append(float(center[idx]))
         target.setdefault("start_times", []).append(float(start[idx]))
         target.setdefault("end_times", []).append(float(end[idx]))
-        target.setdefault("label_id", []).append(int(label_ids[idx]))
-        target.setdefault("label_name", []).append(str(label_names[idx]))
+        # Se remueve el casteo estricto a int() y str() para soportar arreglos de etiquetas densas
+        target.setdefault("label_id", []).append(label_ids[idx])
+        target.setdefault("label_name", []).append(label_names[idx])
 
     manifest = []
     class_names = set()
+    
     for (source_type, video_name), payload in grouped.items():
         arrays = {k: np.array(v) for k, v in payload.items()}
         path = output_dir / source_type / f"{video_name}_latents.npz"
         np.savez_compressed(path, video_name=video_name, source_type=source_type, **arrays)
         manifest.append({"video_name": video_name, "source_type": source_type, "path": str(path)})
-        class_names.update({name for name in payload["label_name"] if name})
+        
+        # Aplanar label_names en caso de que sean arreglos por la segmentación densa
+        for name_item in payload["label_name"]:
+            if isinstance(name_item, (list, np.ndarray)):
+                class_names.update({str(n) for n in name_item if n})
+            elif name_item:
+                class_names.add(str(name_item))
 
     (output_dir / "manifest_latents.json").write_text(json.dumps(manifest, indent=2))
-    (output_dir / "class_names.json").write_text(json.dumps(sorted(class_names), indent=2))
-    tv_dir = output_dir / "tv"
-    commercials_dir = output_dir / "commercials"
+    (output_dir / "class_names.json").write_text(json.dumps(sorted(list(class_names)), indent=2))
+    
     print(f"[export_latents] groups exported: {len(grouped)}")
-    tv_count = len(list(tv_dir.glob("*_latents.npz")))
-    commercial_count = len(list(commercials_dir.glob("*_latents.npz")))
-    print(f"[export_latents] tv files: {tv_count}")
-    print(f"[export_latents] commercial files: {commercial_count}")
-    if commercial_count == 0:
-        raise RuntimeError("No se exportaron latentes de commercials; revise source_type/video_name")
+    
+    # Resumen dinámico por fuente en lugar de hardcodear tv/commercials
+    for source in sorted(unique_sources):
+        source_dir = output_dir / source
+        count = len(list(source_dir.glob("*_latents.npz")))
+        print(f"[export_latents] {source} files: {count}")
 
 
 if __name__ == "__main__":
