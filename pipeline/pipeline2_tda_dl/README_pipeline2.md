@@ -37,6 +37,10 @@ Ejemplo minimo de `splits.json`:
 8. `decode_breakfast_predictions.py`
 9. `eval_breakfast_segmentation.py`
 
+Playbook en Jupyter:
+
+- `pipeline/pipeline2_tda_dl/experiments/breakfast_actions_playbook.ipynb`
+
 ## Ejecucion recomendada
 
 ```bash
