@@ -7,6 +7,8 @@ from typing import Dict, List
 
 import numpy as np
 
+from .repro_utils import runtime_metadata, safe_filename, write_json
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -17,6 +19,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--label_map", type=Path, default=None)
     parser.add_argument("--kernel_size", type=int, default=5)
     parser.add_argument("--min_segment_sec", type=float, default=0.5)
+    parser.add_argument(
+        "--strict_missing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -155,6 +163,7 @@ def main() -> None:
 
     manifest_rows: List[Dict] = []
     for row in raw_rows:
+        sample_id = str(row.get("sample_id") or row.get("video_id") or "").strip()
         video_id = str(row.get("video_id") or "").strip()
         output_path = str(row.get("output_path") or "").strip()
         if not video_id or not output_path:
@@ -164,6 +173,8 @@ def main() -> None:
         if not pred_path.is_absolute():
             pred_path = (args.raw_manifest.parent / pred_path).resolve()
         if not pred_path.exists():
+            if args.strict_missing:
+                raise FileNotFoundError(f"No existe raw prediction: {pred_path}")
             continue
 
         with np.load(pred_path, allow_pickle=True) as data:
@@ -185,9 +196,10 @@ def main() -> None:
         )
         segments = _labels_to_segments(decoded_ids, timestamps_sec, id_to_name)
 
-        out_npz = decoded_dir / f"{video_id}_decoded.npz"
+        out_npz = decoded_dir / f"{safe_filename(sample_id)}_decoded.npz"
         np.savez_compressed(
             out_npz,
+            sample_id=np.array([sample_id], dtype=np.str_),
             video_id=np.array([video_id], dtype=np.str_),
             timestamps_sec=timestamps_sec,
             decoded_label_ids=decoded_ids.astype(np.int32),
@@ -195,37 +207,48 @@ def main() -> None:
             raw_label_ids=pred_label_ids.astype(np.int32),
         )
 
-        out_segments = decoded_dir / f"{video_id}_segments.json"
+        out_segments = decoded_dir / f"{safe_filename(sample_id)}_segments.json"
         out_segments.write_text(
             json.dumps(segments, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
         manifest_rows.append(
             {
+                "sample_id": sample_id,
                 "video_id": video_id,
-                "output_path": str(out_npz),
-                "segments_path": str(out_segments),
+                "output_path": str(out_npz.relative_to(output_dir)),
+                "segments_path": str(out_segments.relative_to(output_dir)),
                 "num_frames": int(decoded_ids.shape[0]),
                 "num_segments": int(len(segments)),
             }
         )
 
     manifest_path = output_dir / "decoded_manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest_rows, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    write_json(manifest_path, manifest_rows)
     summary = {
         "num_videos": len(manifest_rows),
         "kernel_size": int(args.kernel_size),
         "min_segment_sec": float(args.min_segment_sec),
     }
     summary_path = output_dir / "decoded_summary.json"
-    summary_path.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    write_json(summary_path, summary)
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else output_dir / "decoded_metadata.json"
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="decode_breakfast_predictions",
+            args=args,
+            extra={"num_videos": len(manifest_rows)},
+        ),
     )
 
     print(f"[decode_breakfast_predictions] videos={len(manifest_rows)}")
     print(f"[decode_breakfast_predictions] manifest={manifest_path}")
+    print(f"[decode_breakfast_predictions] metadata={metadata_path}")
 
 
 if __name__ == "__main__":

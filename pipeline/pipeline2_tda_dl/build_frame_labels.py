@@ -10,6 +10,13 @@ from typing import Dict, Iterable, List
 import numpy as np
 
 from .breakfast_annotations import ActionSegment, load_action_segments
+from .repro_utils import (
+    build_sample_id,
+    relpath_str,
+    runtime_metadata,
+    safe_filename,
+    write_json,
+)
 
 
 @dataclass(frozen=True)
@@ -24,6 +31,7 @@ class CubicalVideoMeta:
 @dataclass(frozen=True)
 class DatasetEntry:
     key: str
+    sample_id: str
     video_id: str
     split: str
     subject_id: str
@@ -47,7 +55,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--native_fps_default", type=float, default=15.0)
     parser.add_argument("--lowercase_labels", action="store_true")
     parser.add_argument("--frame_end_exclusive", action="store_true")
-    parser.add_argument("--strict_missing", action="store_true")
+    parser.add_argument(
+        "--strict_missing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -90,24 +103,33 @@ def _build_cubical_index(cubical_manifest_path: Path) -> Dict[str, CubicalVideoM
         sampled_fps = float(entry.get("sampled_fps", 0.0) or 0.0)
         duration_sec = float(entry.get("duration_sec", 0.0) or 0.0)
 
-        candidates = [
-            _safe_str(entry, ["video_id"]),
-            _safe_str(entry, ["source_path"]),
-            _safe_str(entry, ["output_path"]),
-        ]
+        sample_id = _safe_str(entry, ["sample_id"])
+        candidates = [sample_id] if sample_id else []
+        candidates.extend(
+            [
+                _safe_str(entry, ["video_id"]),
+                _safe_str(entry, ["source_path"]),
+                _safe_str(entry, ["output_path"]),
+            ]
+        )
 
         for candidate in candidates:
             if not candidate:
                 continue
-            key = _normalize_key(candidate)
-            if key not in index:
-                index[key] = CubicalVideoMeta(
-                    key=key,
-                    npz_path=npz_path,
-                    native_fps=native_fps,
-                    sampled_fps=sampled_fps,
-                    duration_sec=duration_sec,
-                )
+            key = (
+                candidate.strip().lower()
+                if candidate == sample_id
+                else _normalize_key(candidate)
+            )
+            if key in index and index[key].npz_path != npz_path:
+                raise ValueError(f"Clave duplicada en cubical manifest: {key}")
+            index[key] = CubicalVideoMeta(
+                key=key,
+                npz_path=npz_path,
+                native_fps=native_fps,
+                sampled_fps=sampled_fps,
+                duration_sec=duration_sec,
+            )
     return index
 
 
@@ -128,10 +150,16 @@ def _dataset_entries(dataset_manifest_path: Path) -> List[DatasetEntry]:
         split = _safe_str(entry, ["split"], default="train")
         subject_id = _safe_str(entry, ["subject_id", "subject"], default="")
         activity_label = _safe_str(entry, ["activity_label", "activity"], default="")
+        sample_id = _safe_str(entry, ["sample_id"])
+        if not sample_id:
+            sample_id = build_sample_id(
+                split=split, subject_id=subject_id, video_id=video_id
+            )
 
         records.append(
             DatasetEntry(
-                key=_normalize_key(video_id),
+                key=sample_id.lower(),
+                sample_id=sample_id,
                 video_id=Path(video_id).stem,
                 split=split,
                 subject_id=subject_id,
@@ -266,9 +294,7 @@ def main() -> None:
         train_labels, sil_label=args.sil_label, unk_label=args.unk_label
     )
     label_map_path = output_dir / "label_map.json"
-    label_map_path.write_text(
-        json.dumps(label_map, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    write_json(label_map_path, label_map)
 
     manifest_rows: List[Dict] = []
     label_counter = Counter()
@@ -333,19 +359,24 @@ def main() -> None:
 
         split_dir = output_dir / entry.split
         split_dir.mkdir(parents=True, exist_ok=True)
-        output_npz = split_dir / f"{entry.video_id}_labels.npz"
+        output_npz = split_dir / f"{safe_filename(entry.sample_id)}_labels.npz"
         np.savez_compressed(
             output_npz,
             timestamps_sec=timestamps_sec,
             frame_labels=frame_labels,
             frame_label_ids=frame_label_ids,
             valid_mask=valid_mask,
+            sample_id=np.array([entry.sample_id], dtype=np.str_),
             video_id=np.array([entry.video_id], dtype=np.str_),
             split=np.array([entry.split], dtype=np.str_),
             subject_id=np.array([entry.subject_id], dtype=np.str_),
             activity_label=np.array([entry.activity_label], dtype=np.str_),
-            annotation_path=np.array([str(entry.annotation_path)], dtype=np.str_),
-            cubical_npz_path=np.array([str(cubical_meta.npz_path)], dtype=np.str_),
+            annotation_path=np.array(
+                [relpath_str(entry.annotation_path, output_dir)], dtype=np.str_
+            ),
+            cubical_npz_path=np.array(
+                [relpath_str(cubical_meta.npz_path, output_dir)], dtype=np.str_
+            ),
         )
 
         split_stats = split_counter[entry.split]
@@ -357,11 +388,12 @@ def main() -> None:
         label_counter.update(frame_label_ids.tolist())
         manifest_rows.append(
             {
+                "sample_id": entry.sample_id,
                 "video_id": entry.video_id,
                 "split": entry.split,
                 "subject_id": entry.subject_id,
                 "activity_label": entry.activity_label,
-                "output_path": str(output_npz),
+                "output_path": relpath_str(output_npz, output_dir),
                 "num_frames": int(frame_label_ids.shape[0]),
                 "num_unknown_frames": int(np.sum(frame_label_ids == unk_id)),
                 "num_sil_frames": int(np.sum(frame_label_ids == sil_id)),
@@ -369,9 +401,7 @@ def main() -> None:
         )
 
     manifest_path = output_dir / "manifest_frame_labels.json"
-    manifest_path.write_text(
-        json.dumps(manifest_rows, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    write_json(manifest_path, manifest_rows)
 
     inv_label_map = {idx: label for label, idx in label_map.items()}
     label_distribution = {
@@ -390,14 +420,27 @@ def main() -> None:
         "splits": split_counter,
     }
     summary_path = output_dir / "summary_frame_labels.json"
-    summary_path.write_text(
-        json.dumps(summary_payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    write_json(summary_path, summary_payload)
+
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else output_dir / "metadata_frame_labels.json"
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="build_frame_labels",
+            args=args,
+            extra={"num_videos": len(manifest_rows)},
+        ),
     )
 
     print(f"[build_frame_labels] videos_processed={len(manifest_rows)}")
     print(f"[build_frame_labels] label_map={label_map_path}")
     print(f"[build_frame_labels] manifest={manifest_path}")
     print(f"[build_frame_labels] summary={summary_path}")
+    print(f"[build_frame_labels] metadata={metadata_path}")
     if missing_entries:
         print(f"[build_frame_labels] entries_missing={len(missing_entries)}")
 

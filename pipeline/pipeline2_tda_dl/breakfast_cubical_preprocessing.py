@@ -11,6 +11,8 @@ from gudhi.representations import PersistenceImage
 
 from pipeline.preprocessing.cubical_preprocessing import process_video
 
+from .repro_utils import relpath_str, runtime_metadata, safe_filename, write_json
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -23,8 +25,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min_persistence", type=float, default=0.005)
     parser.add_argument("--splits", type=str, default="train,val,test")
     parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--strict_missing", action="store_true")
+    parser.add_argument(
+        "--strict_missing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument("--manifest_out", type=Path, default=None)
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -94,11 +101,19 @@ def main() -> None:
     records: List[Dict] = []
     skipped_split = 0
     missing_paths = 0
+    seen_sample_ids: set[str] = set()
     for entry in dataset_entries:
         split = str(entry.get("split") or "train").strip()
         if split not in selected_splits:
             skipped_split += 1
             continue
+
+        sample_id = str(entry.get("sample_id") or "").strip()
+        if not sample_id:
+            raise ValueError(f"Entrada sin sample_id en dataset manifest: {entry}")
+        if sample_id in seen_sample_ids:
+            raise ValueError(f"sample_id duplicado en dataset manifest: {sample_id}")
+        seen_sample_ids.add(sample_id)
 
         raw_video_path = str(entry.get("video_path") or "").strip()
         if not raw_video_path:
@@ -114,17 +129,39 @@ def main() -> None:
             missing_paths += 1
             continue
 
-        summary = process_video(
-            video_path=video_path,
-            category=split,
-            output_root=output_dir,
-            args=runtime_args,
-            pi_transform_h0=pi_h0,
-            pi_transform_h1=pi_h1,
+        annotation_raw = str(entry.get("annotation_path") or "").strip()
+        annotation_path = (
+            relpath_str(
+                _resolve_path(annotation_raw, args.dataset_manifest),
+                manifest_out.parent,
+            )
+            if annotation_raw
+            else ""
         )
 
-        output_rel = f"{split}/{video_path.stem}.npz"
+        output_rel = f"{split}/{safe_filename(sample_id)}.npz"
         output_abs = output_dir / output_rel
+        legacy_rel = f"{split}/{video_path.stem}.npz"
+        legacy_abs = output_dir / legacy_rel
+
+        if output_abs.exists() and not args.overwrite:
+            summary = None
+        else:
+            summary = process_video(
+                video_path=video_path,
+                category=split,
+                output_root=output_dir,
+                args=runtime_args,
+                pi_transform_h0=pi_h0,
+                pi_transform_h1=pi_h1,
+            )
+            if legacy_abs.exists() and legacy_abs != output_abs:
+                output_abs.parent.mkdir(parents=True, exist_ok=True)
+                legacy_abs.replace(output_abs)
+
+        if summary is None and not output_abs.exists() and legacy_abs.exists():
+            output_abs.parent.mkdir(parents=True, exist_ok=True)
+            legacy_abs.replace(output_abs)
 
         if summary is not None:
             num_frames = summary.num_frames
@@ -151,12 +188,13 @@ def main() -> None:
 
         records.append(
             {
+                "sample_id": sample_id,
                 "video_id": str(entry.get("video_id") or video_path.stem),
                 "split": split,
                 "subject_id": str(entry.get("subject_id") or ""),
                 "activity_label": str(entry.get("activity_label") or ""),
-                "annotation_path": str(entry.get("annotation_path") or ""),
-                "source_path": str(video_path.resolve()),
+                "annotation_path": annotation_path,
+                "source_path": relpath_str(video_path, manifest_out.parent),
                 "output_path": output_rel,
                 "num_frames": int(num_frames),
                 "native_fps": float(native_fps),
@@ -167,9 +205,7 @@ def main() -> None:
         )
 
     manifest_out.parent.mkdir(parents=True, exist_ok=True)
-    manifest_out.write_text(
-        json.dumps(records, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    write_json(manifest_out, records)
 
     summary = {
         "num_records": len(records),
@@ -178,13 +214,29 @@ def main() -> None:
         "missing_paths": missing_paths,
     }
     summary_path = manifest_out.with_name(manifest_out.stem + "_summary.json")
-    summary_path.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    write_json(summary_path, summary)
+
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else manifest_out.with_name(manifest_out.stem + "_metadata.json")
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="breakfast_cubical_preprocessing",
+            args=args,
+            extra={
+                "num_records": len(records),
+                "selected_splits": sorted(selected_splits),
+            },
+        ),
     )
 
     print(f"[breakfast_cubical_preprocessing] records={len(records)}")
     print(f"[breakfast_cubical_preprocessing] manifest={manifest_out}")
     print(f"[breakfast_cubical_preprocessing] summary={summary_path}")
+    print(f"[breakfast_cubical_preprocessing] metadata={metadata_path}")
 
 
 if __name__ == "__main__":

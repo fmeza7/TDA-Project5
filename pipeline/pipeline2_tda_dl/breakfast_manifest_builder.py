@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Dict, Iterable, List
 
+from .repro_utils import build_sample_id, relpath_str, runtime_metadata, write_json
+
 
 VIDEO_EXTENSIONS = {".avi", ".mp4", ".mov", ".mkv", ".mpeg", ".mpg"}
 KNOWN_ACTIVITIES = [
@@ -30,7 +32,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--annotations_dir", type=Path, required=True)
     parser.add_argument("--output_manifest", type=Path, required=True)
     parser.add_argument("--split_file", type=Path, default=None)
-    parser.add_argument("--default_split", type=str, default="train")
+    parser.add_argument("--default_split", type=str, default="")
+    parser.add_argument("--expected_splits", type=str, default="train,val,test")
+    parser.add_argument(
+        "--max_videos_per_split",
+        type=int,
+        default=0,
+        help="Limita videos por split (0 = sin limite)",
+    )
     parser.add_argument(
         "--activities",
         type=str,
@@ -55,7 +64,22 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Subjects para test separados por coma (override)",
     )
-    parser.add_argument("--strict_annotations", action="store_true")
+    parser.add_argument(
+        "--strict_annotations",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--strict_metadata",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--fuzzy_annotations",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -123,13 +147,20 @@ def _annotation_index(annotations_dir: Path) -> Dict[str, List[Path]]:
     return index
 
 
-def find_annotation(video_path: Path, ann_index: Dict[str, List[Path]]) -> Path | None:
+def find_annotation(
+    video_path: Path, ann_index: Dict[str, List[Path]], fuzzy_match: bool = False
+) -> Path | None:
     video_key = _normalize_text(video_path.stem)
     exact = ann_index.get(video_key, [])
     if len(exact) == 1:
         return exact[0]
     if len(exact) > 1:
-        return sorted(exact, key=lambda p: len(str(p)))[0]
+        raise ValueError(
+            f"Multiples anotaciones exactas para {video_path}: {sorted(str(p) for p in exact)}"
+        )
+
+    if not fuzzy_match:
+        return None
 
     candidates: List[Path] = []
     for key, paths in ann_index.items():
@@ -137,11 +168,43 @@ def find_annotation(video_path: Path, ann_index: Dict[str, List[Path]]) -> Path 
             candidates.extend(paths)
     if not candidates:
         return None
+    unique_candidates = sorted({candidate.resolve() for candidate in candidates})
+    if len(unique_candidates) > 1:
+        raise ValueError(
+            f"Matching difuso ambiguo para {video_path}: {[str(p) for p in unique_candidates]}"
+        )
     candidates = sorted(
         candidates,
         key=lambda p: (abs(len(_normalize_text(p.stem)) - len(video_key)), len(str(p))),
     )
     return candidates[0]
+
+
+def _expected_splits(value: str) -> set[str]:
+    return {token.strip().lower() for token in value.split(",") if token.strip()}
+
+
+def _ensure_explicit_split_configuration(
+    split_mapping: Dict[str, str], default_split: str
+) -> None:
+    if split_mapping:
+        return
+    if default_split.strip():
+        return
+    raise ValueError(
+        "Debes definir los splits de forma explicita usando --split_file o --train_subjects/--val_subjects/--test_subjects"
+    )
+
+
+def _validate_subject_split_mapping(split_mapping: Dict[str, str]) -> Dict[str, str]:
+    normalized: Dict[str, str] = {}
+    for subject, split in split_mapping.items():
+        subject_key = _normalize_subject(subject)
+        split_name = split.strip().lower()
+        if not subject_key or not split_name:
+            continue
+        normalized[subject_key] = split_name
+    return normalized
 
 
 def _load_split_mapping(path: Path | None) -> Dict[str, str]:
@@ -204,15 +267,32 @@ def build_manifest(
     default_split: str,
     activities: List[str],
     strict_annotations: bool,
+    strict_metadata: bool,
+    fuzzy_annotations: bool,
 ) -> List[Dict]:
     ann_index = _annotation_index(annotations_dir)
     rows: List[Dict] = []
     missing_annotations = 0
+    seen_sample_ids: set[str] = set()
 
     for video_path in iter_video_files(videos_dir):
         subject_id = _subject_from_path(video_path)
-        split = split_mapping.get(subject_id, default_split)
-        annotation = find_annotation(video_path, ann_index)
+        if not subject_id and strict_metadata:
+            raise ValueError(f"No se pudo inferir subject_id para {video_path}")
+
+        split = split_mapping.get(subject_id, default_split.strip().lower())
+        if not split:
+            raise ValueError(
+                f"No se encontro split para subject_id={subject_id or '<empty>'} video={video_path}"
+            )
+
+        activity_label = _activity_from_path(video_path, activities)
+        if not activity_label and strict_metadata:
+            raise ValueError(f"No se pudo inferir activity_label para {video_path}")
+
+        annotation = find_annotation(
+            video_path, ann_index, fuzzy_match=fuzzy_annotations
+        )
         if annotation is None:
             missing_annotations += 1
             if strict_annotations:
@@ -221,12 +301,22 @@ def build_manifest(
         else:
             annotation_path = str(annotation.resolve())
 
+        sample_id = build_sample_id(
+            split=split,
+            subject_id=subject_id,
+            video_id=video_path.stem,
+        )
+        if sample_id in seen_sample_ids:
+            raise ValueError(f"sample_id duplicado detectado: {sample_id}")
+        seen_sample_ids.add(sample_id)
+
         row = {
+            "sample_id": sample_id,
             "video_id": video_path.stem,
             "video_path": str(video_path.resolve()),
-            "activity_label": _activity_from_path(video_path, activities),
+            "activity_label": activity_label,
             "subject_id": subject_id,
-            "split": split,
+            "split": split.strip().lower(),
             "annotation_path": annotation_path,
         }
         rows.append(row)
@@ -239,8 +329,15 @@ def build_manifest(
 
 
 def write_manifest(path: Path, rows: List[Dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
+    serialized: List[Dict] = []
+    for row in rows:
+        item = dict(row)
+        for key in ("video_path", "annotation_path"):
+            raw_value = str(item.get(key) or "").strip()
+            if raw_value:
+                item[key] = relpath_str(Path(raw_value), path.parent)
+        serialized.append(item)
+    write_json(path, serialized)
 
 
 def write_summary(path: Path, rows: List[Dict]) -> None:
@@ -267,7 +364,42 @@ def write_summary(path: Path, rows: List[Dict]) -> None:
         "subjects": subject_counts,
         "activities": activity_counts,
     }
-    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_json(path, payload)
+
+
+def _validate_manifest(rows: List[Dict], expected_splits: set[str]) -> None:
+    if not rows:
+        raise RuntimeError("El manifest de Breakfast quedo vacio")
+
+    seen_sample_ids: set[str] = set()
+    present_splits: set[str] = set()
+    for row in rows:
+        sample_id = str(row.get("sample_id") or "").strip()
+        if not sample_id:
+            raise ValueError("Todas las filas del manifest deben incluir sample_id")
+        if sample_id in seen_sample_ids:
+            raise ValueError(f"sample_id duplicado detectado: {sample_id}")
+        seen_sample_ids.add(sample_id)
+        present_splits.add(str(row.get("split") or "").strip().lower())
+
+    missing_splits = sorted(expected_splits - present_splits)
+    if missing_splits:
+        raise ValueError(f"Faltan splits esperados en el manifest: {missing_splits}")
+
+
+def _limit_rows_per_split(rows: List[Dict], max_videos_per_split: int) -> List[Dict]:
+    if max_videos_per_split <= 0:
+        return rows
+    kept: List[Dict] = []
+    counters: Dict[str, int] = {}
+    for row in rows:
+        split = str(row.get("split") or "").strip().lower()
+        current = counters.get(split, 0)
+        if current >= max_videos_per_split:
+            continue
+        counters[split] = current + 1
+        kept.append(row)
+    return kept
 
 
 def main() -> None:
@@ -281,8 +413,11 @@ def main() -> None:
     split_mapping = _override_split_mapping(split_mapping, "train", args.train_subjects)
     split_mapping = _override_split_mapping(split_mapping, "val", args.val_subjects)
     split_mapping = _override_split_mapping(split_mapping, "test", args.test_subjects)
+    split_mapping = _validate_subject_split_mapping(split_mapping)
+    _ensure_explicit_split_configuration(split_mapping, args.default_split)
 
     activities = [x.strip() for x in args.activities.split(",") if x.strip()]
+    expected_splits = _expected_splits(args.expected_splits)
     rows = build_manifest(
         videos_dir=args.videos_dir,
         annotations_dir=args.annotations_dir,
@@ -290,15 +425,39 @@ def main() -> None:
         default_split=args.default_split,
         activities=activities,
         strict_annotations=args.strict_annotations,
+        strict_metadata=args.strict_metadata,
+        fuzzy_annotations=args.fuzzy_annotations,
     )
+    rows = _limit_rows_per_split(rows, args.max_videos_per_split)
+    _validate_manifest(rows, expected_splits)
 
     write_manifest(args.output_manifest, rows)
     summary_path = args.output_manifest.with_name(
         args.output_manifest.stem + "_summary.json"
     )
     write_summary(summary_path, rows)
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else args.output_manifest.with_name(
+            args.output_manifest.stem + "_metadata.json"
+        )
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="breakfast_manifest_builder",
+            args=args,
+            extra={
+                "num_videos": len(rows),
+                "expected_splits": sorted(expected_splits),
+                "max_videos_per_split": int(args.max_videos_per_split),
+            },
+        ),
+    )
     print(f"[breakfast_manifest_builder] manifest={args.output_manifest}")
     print(f"[breakfast_manifest_builder] summary={summary_path}")
+    print(f"[breakfast_manifest_builder] metadata={metadata_path}")
 
 
 if __name__ == "__main__":

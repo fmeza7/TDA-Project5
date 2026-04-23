@@ -98,6 +98,28 @@ python evaluar-v2.py pipeline/pipeline2_tda_dl/artifacts/detecciones/detecciones
 
 La adaptacion a Breakfast mantiene la parte TDA del repo y reemplaza el bloque k-NN por supervision temporal frame-level.
 
+## Ejecucion reproducible recomendada
+
+La ruta recomendada es ejecutar las etapas secuencialmente y guardar todo en `pipeline/pipeline2_tda_dl/artifacts_breakfast/`.
+
+## Contrato del dataset Breakfast
+
+- El split debe definirse explícitamente por `subject_id` en `--split_file`.
+- Cada muestra usa una clave estable `sample_id = split__subject_id__video_id`.
+- El matching de anotaciones es exacto por defecto; el modo difuso queda deshabilitado salvo que se pida explícitamente.
+- El pipeline falla si faltan splits esperados, si hay colisiones de IDs o si una etapa encuentra artefactos inconsistentes.
+
+Ejemplo mínimo de `splits.json`:
+
+```json
+{
+  "P03": "train",
+  "P04": "train",
+  "P16": "val",
+  "P28": "test"
+}
+```
+
 ### Flujo recomendado
 
 1. `breakfast_manifest_builder.py`: crea un manifest con `video_id`, `subject_id`, `activity_label`, `split`, `annotation_path`.
@@ -116,6 +138,7 @@ La adaptacion a Breakfast mantiene la parte TDA del repo y reemplaza el bloque k
 python -m pipeline.pipeline2_tda_dl.breakfast_manifest_builder \
   --videos_dir data/breakfast/videos \
   --annotations_dir data/breakfast/annotations \
+  --split_file data/breakfast/splits.json \
   --output_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json
 
 python -m pipeline.pipeline2_tda_dl.breakfast_cubical_preprocessing \
@@ -150,6 +173,7 @@ python -m pipeline.pipeline2_tda_dl.train_breakfast_temporal_segmenter \
   --epochs 30 \
   --batch_size 32 \
   --lr 1e-3 \
+  --seed 1337 \
   --ignore_unknown \
   --class_weighting
 
@@ -157,7 +181,8 @@ python -m pipeline.pipeline2_tda_dl.infer_breakfast_temporal_segmenter \
   --windows_npz pipeline/pipeline2_tda_dl/artifacts_breakfast/windows/test_windows.npz \
   --model_checkpoint pipeline/pipeline2_tda_dl/artifacts_breakfast/temporal_model/breakfast_temporal_best.pt \
   --frame_labels_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/frame_labels/manifest_frame_labels.json \
-  --output_dir pipeline/pipeline2_tda_dl/artifacts_breakfast/inference
+  --output_dir pipeline/pipeline2_tda_dl/artifacts_breakfast/inference \
+  --seed 1337
 
 python -m pipeline.pipeline2_tda_dl.decode_breakfast_predictions \
   --raw_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/inference/raw_predictions_manifest.json \
@@ -176,18 +201,5 @@ Notas de protocolo:
 - `label_map.json` se construye solo con labels de `train` para evitar leakage de test.
 - El split debe ser por `subject_id` (no por ventanas).
 - `valid_mask` se guarda desde el inicio para soportar padding/batches variables en la etapa de modelado temporal.
-
-## Experimento exploratorio de descriptores TDA
-
-Se agrego el notebook:
-
-- `pipeline/pipeline2_tda_dl/experiments/breakfast_tda_descriptor_experiment.ipynb`
-
-Este experimento analiza si las senales topologicas detectan boundaries de segmentacion **a priori** (sin red temporal), con:
-
-- visualizacion por video de descriptores y boundaries GT,
-- score de separabilidad por descriptor,
-- curva precision-recall de deteccion de boundaries basada en picos,
-- PCA de descriptores por action unit,
-- export de graficos y `experiment_summary.json` en:
-  `pipeline/pipeline2_tda_dl/artifacts_breakfast_experiments/`.
+- `strict_alignment`, `strict_missing_predictions` y `fail_on_uncovered` quedan activados por defecto.
+- Las rutas embebidas en manifests se guardan relativas para que los artefactos puedan moverse junto al repo.

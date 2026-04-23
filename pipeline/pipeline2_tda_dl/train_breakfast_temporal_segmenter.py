@@ -12,6 +12,7 @@ from sklearn.metrics import f1_score
 
 from .breakfast_dataset import load_window_npz, make_dataloader, summarize_windows
 from .breakfast_temporal_segmenter import TDATemporalSegmenter
+from .repro_utils import runtime_metadata, seed_everything, write_json
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,10 +34,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--ignore_unknown", action="store_true")
     parser.add_argument("--class_weighting", action="store_true")
+    parser.add_argument("--seed", type=int, default=1337)
+    parser.add_argument("--device", type=str, default="auto")
+    parser.add_argument(
+        "--deterministic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
-def resolve_device() -> torch.device:
+def resolve_device(device_name: str) -> torch.device:
+    requested = device_name.strip().lower()
+    if requested and requested != "auto":
+        return torch.device(requested)
     if torch.backends.mps.is_available():
         return torch.device("mps")
     if torch.cuda.is_available():
@@ -156,7 +168,8 @@ def _evaluate(
 
 def main() -> None:
     args = parse_args()
-    device = resolve_device()
+    seed_everything(args.seed, deterministic=args.deterministic)
+    device = resolve_device(args.device)
     print(f"Using device: {device}")
 
     train_path = args.windows_dir / args.train_file
@@ -186,12 +199,14 @@ def main() -> None:
         batch_size=args.batch_size,
         shuffle=True,
         num_workers=args.num_workers,
+        seed=args.seed,
     )
     val_loader = make_dataloader(
         val_path,
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=args.num_workers,
+        seed=args.seed,
     )
 
     class_weights = None
@@ -272,6 +287,8 @@ def main() -> None:
                     "dropout": args.dropout,
                     "best_val_loss": best_val,
                     "label_map": label_map,
+                    "seed": args.seed,
+                    "device": str(device),
                 },
                 best_path,
             )
@@ -283,22 +300,30 @@ def main() -> None:
         )
 
     config = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}
-    (output_dir / "train_config.json").write_text(
-        json.dumps(config, indent=2), encoding="utf-8"
+    write_json(output_dir / "train_config.json", config)
+    write_json(output_dir / "train_history.json", history)
+    write_json(output_dir / "train_windows_summary.json", summarize_windows(train_path))
+    write_json(output_dir / "val_windows_summary.json", summarize_windows(val_path))
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else output_dir / "train_metadata.json"
     )
-    (output_dir / "train_history.json").write_text(
-        json.dumps(history, indent=2), encoding="utf-8"
-    )
-    (output_dir / "train_windows_summary.json").write_text(
-        json.dumps(summarize_windows(train_path), indent=2),
-        encoding="utf-8",
-    )
-    (output_dir / "val_windows_summary.json").write_text(
-        json.dumps(summarize_windows(val_path), indent=2),
-        encoding="utf-8",
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="train_breakfast_temporal_segmenter",
+            args=args,
+            extra={
+                "resolved_device": str(device),
+                "best_checkpoint": str(best_path),
+                "best_val_loss": best_val,
+            },
+        ),
     )
 
     print(f"[train_breakfast_temporal_segmenter] best_checkpoint={best_path}")
+    print(f"[train_breakfast_temporal_segmenter] metadata={metadata_path}")
 
 
 if __name__ == "__main__":

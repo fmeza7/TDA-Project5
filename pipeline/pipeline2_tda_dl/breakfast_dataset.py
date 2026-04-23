@@ -64,12 +64,18 @@ def make_dataloader(
     batch_size: int,
     shuffle: bool,
     num_workers: int = 0,
+    seed: int | None = None,
 ) -> DataLoader:
     dataset = BreakfastWindowDataset(npz_path)
+    generator = None
+    if seed is not None:
+        generator = torch.Generator()
+        generator.manual_seed(seed)
     return DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
         pin_memory=torch.cuda.is_available(),
+        generator=generator,
     )

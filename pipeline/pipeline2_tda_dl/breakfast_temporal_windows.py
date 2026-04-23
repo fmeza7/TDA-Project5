@@ -9,9 +9,12 @@ from typing import Dict, List
 
 import numpy as np
 
+from .repro_utils import relpath_str, runtime_metadata, write_json
+
 
 @dataclass(frozen=True)
 class VideoFiles:
+    sample_id: str
     video_id: str
     split: str
     cubical_npz: Path
@@ -33,9 +36,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--stride_test", type=int, default=1)
     parser.add_argument("--splits", type=str, default="train,val,test")
     parser.add_argument("--drop_windows_with_unknown", action="store_true")
-    parser.add_argument("--strict_alignment", action="store_true")
-    parser.add_argument("--strict_missing", action="store_true")
+    parser.add_argument(
+        "--strict_alignment",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--strict_missing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
     parser.add_argument("--label_map", type=Path, default=None)
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -86,6 +98,7 @@ def _index_cubical(cubical_manifest: Path) -> Dict[str, Path]:
     rows = _read_json_list(cubical_manifest)
     index: Dict[str, Path] = {}
     for row in rows:
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(
             row.get("video_id")
             or row.get("source_path")
@@ -93,11 +106,13 @@ def _index_cubical(cubical_manifest: Path) -> Dict[str, Path]:
             or ""
         ).strip()
         output_path = str(row.get("output_path") or "").strip()
-        if not video_id or not output_path:
+        if not output_path:
             continue
-        index[_normalize_video_id(video_id)] = _resolve_path(
-            output_path, cubical_manifest
-        )
+        key = sample_id.lower() if sample_id else _normalize_video_id(video_id)
+        resolved = _resolve_path(output_path, cubical_manifest)
+        if key in index and index[key] != resolved:
+            raise ValueError(f"sample_id/video_id duplicado en cubical manifest: {key}")
+        index[key] = resolved
     return index
 
 
@@ -105,6 +120,7 @@ def _index_curves(curves_manifest: Path) -> Dict[str, Path]:
     rows = _read_json_list(curves_manifest)
     index: Dict[str, Path] = {}
     for row in rows:
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(
             row.get("video_id")
             or row.get("source_path")
@@ -112,11 +128,13 @@ def _index_curves(curves_manifest: Path) -> Dict[str, Path]:
             or ""
         ).strip()
         output_path = str(row.get("output_path") or "").strip()
-        if not video_id or not output_path:
+        if not output_path:
             continue
-        index[_normalize_video_id(video_id)] = _resolve_path(
-            output_path, curves_manifest
-        )
+        key = sample_id.lower() if sample_id else _normalize_video_id(video_id)
+        resolved = _resolve_path(output_path, curves_manifest)
+        if key in index and index[key] != resolved:
+            raise ValueError(f"sample_id/video_id duplicado en curves manifest: {key}")
+        index[key] = resolved
     return index
 
 
@@ -124,13 +142,21 @@ def _index_labels(frame_labels_manifest: Path) -> Dict[str, Dict]:
     rows = _read_json_list(frame_labels_manifest)
     index: Dict[str, Dict] = {}
     for row in rows:
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(row.get("video_id") or row.get("output_path") or "").strip()
         output_path = str(row.get("output_path") or "").strip()
         split = str(row.get("split") or "train").strip()
-        if not video_id or not output_path:
+        if not output_path:
             continue
-        key = _normalize_video_id(video_id)
+        key = sample_id.lower() if sample_id else _normalize_video_id(video_id)
+        if key in index and Path(index[key]["labels_npz"]) != _resolve_path(
+            output_path, frame_labels_manifest
+        ):
+            raise ValueError(
+                f"sample_id/video_id duplicado en frame labels manifest: {key}"
+            )
         index[key] = {
+            "sample_id": sample_id or Path(video_id).stem,
             "video_id": Path(video_id).stem,
             "split": split,
             "labels_npz": _resolve_path(output_path, frame_labels_manifest),
@@ -199,6 +225,7 @@ def _build_windows_for_video(
     X_windows: List[np.ndarray] = []
     y_windows: List[np.ndarray] = []
     m_windows: List[np.ndarray] = []
+    sample_ids: List[str] = []
     video_ids: List[str] = []
     splits: List[str] = []
     starts: List[int] = []
@@ -218,6 +245,7 @@ def _build_windows_for_video(
         X_windows.append(X[start:end])
         y_windows.append(y_slice)
         m_windows.append(m[start:end])
+        sample_ids.append(item.sample_id)
         video_ids.append(item.video_id)
         splits.append(item.split)
         starts.append(start)
@@ -227,12 +255,14 @@ def _build_windows_for_video(
     if not X_windows:
         return None
 
-    max_len = max(len(x) for x in video_ids)
+    max_sample_len = max(len(x) for x in sample_ids)
+    max_video_len = max(len(x) for x in video_ids)
     return {
         "X": np.stack(X_windows).astype(np.float32),
         "y": np.stack(y_windows).astype(np.int32),
         "valid_mask": np.stack(m_windows).astype(np.uint8),
-        "video_id": np.array(video_ids, dtype=f"<U{max(1, max_len)}"),
+        "sample_id": np.array(sample_ids, dtype=f"<U{max(1, max_sample_len)}"),
+        "video_id": np.array(video_ids, dtype=f"<U{max(1, max_video_len)}"),
         "split": np.array(splits, dtype=np.str_),
         "start_idx": np.array(starts, dtype=np.int32),
         "end_idx": np.array(ends, dtype=np.int32),
@@ -288,6 +318,7 @@ def main() -> None:
             continue
 
         item = VideoFiles(
+            sample_id=str(label_meta["sample_id"]),
             video_id=str(label_meta["video_id"]),
             split=split,
             cubical_npz=Path(cubical_npz),
@@ -298,6 +329,7 @@ def main() -> None:
         if shard is None:
             per_video_summary.append(
                 {
+                    "sample_id": item.sample_id,
                     "video_id": item.video_id,
                     "split": split,
                     "num_windows": 0,
@@ -308,6 +340,7 @@ def main() -> None:
         split_shards[split].append(shard)
         per_video_summary.append(
             {
+                "sample_id": item.sample_id,
                 "video_id": item.video_id,
                 "split": split,
                 "num_windows": int(shard["X"].shape[0]),
@@ -339,10 +372,22 @@ def main() -> None:
     }
 
     manifest_path = output_dir / "windows_manifest.json"
-    manifest_path.write_text(
-        json.dumps(windows_manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    write_json(manifest_path, windows_manifest)
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else output_dir / "windows_metadata.json"
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="breakfast_temporal_windows",
+            args=args,
+            extra={"split_window_counts": split_counts},
+        ),
     )
     print(f"[breakfast_temporal_windows] manifest={manifest_path}")
+    print(f"[breakfast_temporal_windows] metadata={metadata_path}")
     print(f"[breakfast_temporal_windows] split_window_counts={split_counts}")
     if missing_refs:
         print(f"[breakfast_temporal_windows] missing_references={len(missing_refs)}")

@@ -7,6 +7,8 @@ from typing import Dict, List, Sequence, Tuple
 
 import numpy as np
 
+from .repro_utils import runtime_metadata, write_json
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -19,6 +21,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ignore_labels", type=str, default="")
     parser.add_argument("--ignore_ids", type=str, default="")
     parser.add_argument("--output_json", type=Path, default=None)
+    parser.add_argument(
+        "--strict_missing_predictions",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--strict_length_match",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -173,13 +186,13 @@ def main() -> None:
 
     decoded_index: Dict[str, Path] = {}
     for row in decoded_rows:
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(row.get("video_id") or "").strip()
         out_path = str(row.get("output_path") or "").strip()
         if not video_id or not out_path:
             continue
-        decoded_index[Path(video_id).stem.lower()] = _resolve_path(
-            out_path, args.decoded_manifest
-        )
+        key = sample_id.lower() if sample_id else Path(video_id).stem.lower()
+        decoded_index[key] = _resolve_path(out_path, args.decoded_manifest)
 
     per_video: List[Dict] = []
     frame_correct = 0
@@ -192,18 +205,25 @@ def main() -> None:
         if split not in selected_splits:
             continue
 
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(row.get("video_id") or "").strip()
         gt_path_raw = str(row.get("output_path") or "").strip()
         if not video_id or not gt_path_raw:
             continue
 
-        key = Path(video_id).stem.lower()
+        key = sample_id.lower() if sample_id else Path(video_id).stem.lower()
         pred_path = decoded_index.get(key)
         if pred_path is None or not pred_path.exists():
+            if args.strict_missing_predictions:
+                raise FileNotFoundError(
+                    f"No existe prediccion decodificada para sample/video key={key}"
+                )
             continue
 
         gt_path = _resolve_path(gt_path_raw, args.frame_labels_manifest)
         if not gt_path.exists():
+            if args.strict_missing_predictions:
+                raise FileNotFoundError(f"No existe GT frame-labels: {gt_path}")
             continue
 
         with np.load(gt_path) as data:
@@ -212,6 +232,10 @@ def main() -> None:
         with np.load(pred_path) as data:
             pred_ids = data["decoded_label_ids"].astype(np.int32)
 
+        if args.strict_length_match and gt_ids.shape[0] != pred_ids.shape[0]:
+            raise ValueError(
+                f"Largo GT/pred distinto para {video_id}: gt={gt_ids.shape[0]} pred={pred_ids.shape[0]}"
+            )
         length = min(gt_ids.shape[0], pred_ids.shape[0])
         gt_ids = gt_ids[:length]
         pred_ids = pred_ids[:length]
@@ -252,6 +276,7 @@ def main() -> None:
 
         per_video.append(
             {
+                "sample_id": sample_id or Path(video_id).stem,
                 "video_id": Path(video_id).stem,
                 "split": split,
                 "num_frames_eval": total,
@@ -280,9 +305,25 @@ def main() -> None:
 
     if args.output_json is not None:
         args.output_json.parent.mkdir(parents=True, exist_ok=True)
-        args.output_json.write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        write_json(args.output_json, report)
+
+    metadata_target = args.metadata_out or (
+        args.output_json.with_name(args.output_json.stem + "_metadata.json")
+        if args.output_json is not None
+        else args.decoded_manifest.parent / "eval_metadata.json"
+    )
+    write_json(
+        metadata_target,
+        runtime_metadata(
+            stage="eval_breakfast_segmentation",
+            args=args,
+            extra={
+                "num_videos": len(per_video),
+                "frame_accuracy": frame_acc,
+                "edit_score": mean_edit,
+            },
+        ),
+    )
 
     print(
         "[eval_breakfast_segmentation]",
@@ -303,6 +344,7 @@ def main() -> None:
     )
     if args.output_json is not None:
         print(f"[eval_breakfast_segmentation] report={args.output_json}")
+    print(f"[eval_breakfast_segmentation] metadata={metadata_target}")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from .breakfast_temporal_segmenter import TDATemporalSegmenter
+from .repro_utils import runtime_metadata, safe_filename, seed_everything, write_json
 
 
 def parse_args() -> argparse.Namespace:
@@ -22,10 +23,26 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--label_map", type=Path, default=None)
     parser.add_argument("--save_avg_logits", action="store_true")
+    parser.add_argument("--seed", type=int, default=1337)
+    parser.add_argument("--device", type=str, default="auto")
+    parser.add_argument(
+        "--deterministic",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--fail_on_uncovered",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
 
-def resolve_device() -> torch.device:
+def resolve_device(device_name: str) -> torch.device:
+    requested = device_name.strip().lower()
+    if requested and requested != "auto":
+        return torch.device(requested)
     if torch.backends.mps.is_available():
         return torch.device("mps")
     if torch.cuda.is_available():
@@ -58,6 +75,7 @@ def _read_frame_labels_manifest(path: Path | None) -> Dict[str, Dict]:
     for row in rows:
         if not isinstance(row, dict):
             continue
+        sample_id = str(row.get("sample_id") or "").strip()
         video_id = str(row.get("video_id") or "").strip()
         output_path = str(row.get("output_path") or "").strip()
         if not video_id or not output_path:
@@ -65,7 +83,9 @@ def _read_frame_labels_manifest(path: Path | None) -> Dict[str, Dict]:
         npz_path = Path(output_path)
         if not npz_path.is_absolute():
             npz_path = (path.parent / npz_path).resolve()
-        index[Path(video_id).stem.lower()] = {
+        key = sample_id.lower() if sample_id else Path(video_id).stem.lower()
+        index[key] = {
+            "sample_id": sample_id or Path(video_id).stem,
             "video_id": Path(video_id).stem,
             "split": str(row.get("split") or ""),
             "npz_path": npz_path,
@@ -74,15 +94,17 @@ def _read_frame_labels_manifest(path: Path | None) -> Dict[str, Dict]:
 
 
 def _build_video_buffers(
+    sample_ids: np.ndarray,
     video_ids: np.ndarray,
     end_idx: np.ndarray,
     frame_labels_index: Dict[str, Dict],
     num_classes: int,
 ) -> Dict[str, Dict[str, np.ndarray]]:
     buffers: Dict[str, Dict[str, np.ndarray]] = {}
-    for raw_video in video_ids:
+    for raw_sample, raw_video in zip(sample_ids, video_ids):
+        sample_id = str(raw_sample).strip() or Path(str(raw_video)).stem
         video = Path(str(raw_video)).stem
-        key = video.lower()
+        key = sample_id.lower()
         if key in buffers:
             continue
 
@@ -103,12 +125,13 @@ def _build_video_buffers(
 
         if total_len <= 0:
             mask = np.array(
-                [Path(str(v)).stem.lower() == key for v in video_ids], dtype=bool
+                [str(v).strip().lower() == key for v in sample_ids], dtype=bool
             )
             total_len = int(np.max(end_idx[mask])) if np.any(mask) else 0
             timestamps = np.arange(total_len, dtype=np.float32)
 
         buffers[key] = {
+            "sample_id": np.array([sample_id], dtype=np.str_),
             "video_id": np.array([video], dtype=np.str_),
             "sum_logits": np.zeros((total_len, num_classes), dtype=np.float32),
             "count": np.zeros((total_len,), dtype=np.float32),
@@ -120,7 +143,8 @@ def _build_video_buffers(
 
 def main() -> None:
     args = parse_args()
-    device = resolve_device()
+    seed_everything(args.seed, deterministic=args.deterministic)
+    device = resolve_device(args.device)
     print(f"Using device: {device}")
 
     if not args.windows_npz.exists():
@@ -150,11 +174,18 @@ def main() -> None:
             if "valid_mask" in data.files
             else np.ones(data["y"].shape, dtype=np.uint8)
         )
+        sample_ids = (
+            data["sample_id"].astype(np.str_)
+            if "sample_id" in data.files
+            else data["video_id"].astype(np.str_)
+        )
         video_ids = data["video_id"].astype(np.str_)
         start_idx = data["start_idx"].astype(np.int32)
         end_idx = data["end_idx"].astype(np.int32)
 
-    buffers = _build_video_buffers(video_ids, end_idx, frame_labels_index, num_classes)
+    buffers = _build_video_buffers(
+        sample_ids, video_ids, end_idx, frame_labels_index, num_classes
+    )
 
     n = int(X.shape[0])
     for start in range(0, n, max(1, args.batch_size)):
@@ -164,12 +195,16 @@ def main() -> None:
             batch_logits = model(batch_x).detach().cpu().numpy().astype(np.float32)
 
         batch_mask = valid_mask[start:end]
+        batch_samples = sample_ids[start:end]
         batch_videos = video_ids[start:end]
         batch_start = start_idx[start:end]
         batch_end = end_idx[start:end]
 
         for i in range(batch_logits.shape[0]):
-            key = Path(str(batch_videos[i])).stem.lower()
+            key = (
+                str(batch_samples[i]).strip().lower()
+                or Path(str(batch_videos[i])).stem.lower()
+            )
             item = buffers[key]
             s = int(batch_start[i])
             e = int(batch_end[i])
@@ -193,6 +228,7 @@ def main() -> None:
 
     manifest_rows: List[Dict] = []
     inv_label_map = {idx: name for name, idx in label_map.items()} if label_map else {}
+    uncovered_total = 0
 
     for key, item in sorted(buffers.items(), key=lambda kv: kv[0]):
         count = item["count"]
@@ -201,6 +237,8 @@ def main() -> None:
         avg_logits = sum_logits / safe_count[:, None]
         if np.any(count == 0):
             avg_logits[count == 0] = 0.0
+        uncovered = int(np.sum(count == 0))
+        uncovered_total += uncovered
 
         pred_ids = np.argmax(avg_logits, axis=1).astype(np.int32)
         pred_labels = np.array(
@@ -208,9 +246,11 @@ def main() -> None:
             dtype=np.str_,
         )
 
+        sample_id = str(item["sample_id"][0])
         video_id = str(item["video_id"][0])
-        out_path = raw_dir / f"{video_id}_raw_pred.npz"
+        out_path = raw_dir / f"{safe_filename(sample_id)}_raw_pred.npz"
         payload = {
+            "sample_id": item["sample_id"],
             "video_id": item["video_id"],
             "timestamps_sec": item["timestamps_sec"],
             "pred_label_ids": pred_ids,
@@ -225,34 +265,52 @@ def main() -> None:
 
         manifest_rows.append(
             {
+                "sample_id": sample_id,
                 "video_id": video_id,
-                "output_path": str(out_path),
+                "output_path": str(out_path.relative_to(output_dir)),
                 "num_frames": int(pred_ids.shape[0]),
-                "num_uncovered_frames": int(np.sum(count == 0)),
+                "num_uncovered_frames": uncovered,
             }
         )
 
-    manifest_path = output_dir / "raw_predictions_manifest.json"
-    manifest_path.write_text(
-        json.dumps(manifest_rows, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-    if label_map:
-        (output_dir / "label_map.json").write_text(
-            json.dumps(label_map, indent=2, ensure_ascii=False), encoding="utf-8"
+    if args.fail_on_uncovered and uncovered_total > 0:
+        raise RuntimeError(
+            f"Se detectaron {uncovered_total} frames sin cobertura de ventanas en inferencia"
         )
+
+    manifest_path = output_dir / "raw_predictions_manifest.json"
+    write_json(manifest_path, manifest_rows)
+    if label_map:
+        write_json(output_dir / "label_map.json", label_map)
 
     summary = {
         "num_videos": len(manifest_rows),
         "windows_npz": str(args.windows_npz),
         "model_checkpoint": str(args.model_checkpoint),
+        "uncovered_frames_total": uncovered_total,
     }
     summary_path = output_dir / "raw_predictions_summary.json"
-    summary_path.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
+    write_json(summary_path, summary)
+    metadata_path = (
+        args.metadata_out.resolve()
+        if args.metadata_out is not None
+        else output_dir / "raw_predictions_metadata.json"
+    )
+    write_json(
+        metadata_path,
+        runtime_metadata(
+            stage="infer_breakfast_temporal_segmenter",
+            args=args,
+            extra={
+                "resolved_device": str(device),
+                "uncovered_frames_total": uncovered_total,
+            },
+        ),
     )
 
     print(f"[infer_breakfast_temporal_segmenter] videos={len(manifest_rows)}")
     print(f"[infer_breakfast_temporal_segmenter] manifest={manifest_path}")
+    print(f"[infer_breakfast_temporal_segmenter] metadata={metadata_path}")
 
 
 if __name__ == "__main__":
