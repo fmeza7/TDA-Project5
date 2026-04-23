@@ -8,6 +8,9 @@ import re
 
 
 _NUMBER_RE = re.compile(r"^[+-]?\d+(?:\.\d+)?$")
+_RANGE_RE = re.compile(
+    r"^\s*([+-]?\d+(?:\.\d+)?)\s*-\s*([+-]?\d+(?:\.\d+)?)\s+(.+?)\s*$"
+)
 
 
 @dataclass(frozen=True)
@@ -40,6 +43,17 @@ def _parse_line(line: str, lowercase_labels: bool) -> RawSegment | None:
     row = line.strip()
     if not row or row.startswith("#"):
         return None
+
+    match = _RANGE_RE.match(row)
+    if match:
+        start_token, end_token, raw_label = match.groups()
+        label = _clean_label(raw_label, lowercase_labels)
+        return RawSegment(
+            start_value=float(start_token),
+            end_value=float(end_token),
+            label=label,
+            has_decimal=("." in start_token or "." in end_token),
+        )
 
     parts_tab = row.split("\t")
     if len(parts_tab) >= 3 and _is_number(parts_tab[0]) and _is_number(parts_tab[1]):

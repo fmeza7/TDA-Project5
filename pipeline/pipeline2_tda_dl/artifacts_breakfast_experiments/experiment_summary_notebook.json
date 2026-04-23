@@ -1,0 +1,294 @@
+{
+  "config": {
+    "split": "train",
+    "activities": [
+      "cereals",
+      "coffee",
+      "tea",
+      "pancakes"
+    ],
+    "max_videos": 8,
+    "smooth_window": 5,
+    "boundary_tolerance_sec": 0.5,
+    "native_fps_default": 15.0,
+    "project_root": null,
+    "experiment_dir_name": "artifacts_breakfast_experiments"
+  },
+  "analysis_mode": "full",
+  "selected_split": "train",
+  "available_splits": [
+    "test",
+    "train",
+    "val"
+  ],
+  "notes": [
+    "Se usaran frame_labels existentes."
+  ],
+  "num_videos_loaded": 8,
+  "videos": [
+    {
+      "video_id": "P04_cereals",
+      "split": "train",
+      "activity_label": "cereals",
+      "subject_id": "P04",
+      "num_frames": 97,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P04_tea",
+      "split": "train",
+      "activity_label": "tea",
+      "subject_id": "P04",
+      "num_frames": 80,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P05_cereals",
+      "split": "train",
+      "activity_label": "cereals",
+      "subject_id": "P05",
+      "num_frames": 237,
+      "num_gt_segments": 7
+    },
+    {
+      "video_id": "P05_coffee",
+      "split": "train",
+      "activity_label": "coffee",
+      "subject_id": "P05",
+      "num_frames": 224,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P05_tea",
+      "split": "train",
+      "activity_label": "tea",
+      "subject_id": "P05",
+      "num_frames": 333,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P08_tea",
+      "split": "train",
+      "activity_label": "tea",
+      "subject_id": "P08",
+      "num_frames": 74,
+      "num_gt_segments": 5
+    },
+    {
+      "video_id": "P11_cereals",
+      "split": "train",
+      "activity_label": "cereals",
+      "subject_id": "P11",
+      "num_frames": 107,
+      "num_gt_segments": 7
+    },
+    {
+      "video_id": "P11_coffee",
+      "split": "train",
+      "activity_label": "coffee",
+      "subject_id": "P11",
+      "num_frames": 75,
+      "num_gt_segments": 3
+    }
+  ],
+  "top_descriptors_by_fisher": [
+    {
+      "descriptor": "h0_std_persistence",
+      "fisher_score": 0.28379714488983154
+    },
+    {
+      "descriptor": "h0_max_persistence",
+      "fisher_score": 0.24086971580982208
+    },
+    {
+      "descriptor": "h1_max_persistence",
+      "fisher_score": 0.232915997505188
+    },
+    {
+      "descriptor": "h1_std_persistence",
+      "fisher_score": 0.22520431876182556
+    },
+    {
+      "descriptor": "h1_sum_persistence",
+      "fisher_score": 0.2211044877767563
+    },
+    {
+      "descriptor": "h1_count",
+      "fisher_score": 0.21879842877388
+    },
+    {
+      "descriptor": "h0_sum_persistence",
+      "fisher_score": 0.180698424577713
+    },
+    {
+      "descriptor": "brightness_std",
+      "fisher_score": 0.17805850505828857
+    },
+    {
+      "descriptor": "brightness_mean",
+      "fisher_score": 0.16268403828144073
+    },
+    {
+      "descriptor": "combined_activity",
+      "fisher_score": 0.15384623408317566
+    },
+    {
+      "descriptor": "pi_h0_energy",
+      "fisher_score": 0.1536405235528946
+    },
+    {
+      "descriptor": "pi_h1_energy",
+      "fisher_score": 0.15341180562973022
+    }
+  ],
+  "pca_explained_variance_ratio": [
+    0.9612772464752197,
+    0.02963205613195896
+  ],
+  "boundary_grid_results": [
+    {
+      "quantile": 0.7,
+      "tp": 8,
+      "fp": 55,
+      "fn": 30,
+      "precision": 0.12698412698412698,
+      "recall": 0.21052631578947367,
+      "f1": 0.15841584158415842
+    },
+    {
+      "quantile": 0.72,
+      "tp": 7,
+      "fp": 55,
+      "fn": 31,
+      "precision": 0.11290322580645161,
+      "recall": 0.18421052631578946,
+      "f1": 0.14
+    },
+    {
+      "quantile": 0.74,
+      "tp": 7,
+      "fp": 51,
+      "fn": 31,
+      "precision": 0.1206896551724138,
+      "recall": 0.18421052631578946,
+      "f1": 0.14583333333333334
+    },
+    {
+      "quantile": 0.76,
+      "tp": 7,
+      "fp": 48,
+      "fn": 31,
+      "precision": 0.12727272727272726,
+      "recall": 0.18421052631578946,
+      "f1": 0.15053763440860213
+    },
+    {
+      "quantile": 0.7799999999999999,
+      "tp": 7,
+      "fp": 47,
+      "fn": 31,
+      "precision": 0.12962962962962962,
+      "recall": 0.18421052631578946,
+      "f1": 0.15217391304347827
+    },
+    {
+      "quantile": 0.7999999999999999,
+      "tp": 7,
+      "fp": 41,
+      "fn": 31,
+      "precision": 0.14583333333333334,
+      "recall": 0.18421052631578946,
+      "f1": 0.16279069767441862
+    },
+    {
+      "quantile": 0.82,
+      "tp": 7,
+      "fp": 36,
+      "fn": 31,
+      "precision": 0.16279069767441862,
+      "recall": 0.18421052631578946,
+      "f1": 0.17283950617283952
+    },
+    {
+      "quantile": 0.84,
+      "tp": 5,
+      "fp": 33,
+      "fn": 33,
+      "precision": 0.13157894736842105,
+      "recall": 0.13157894736842105,
+      "f1": 0.13157894736842105
+    },
+    {
+      "quantile": 0.86,
+      "tp": 3,
+      "fp": 31,
+      "fn": 35,
+      "precision": 0.08823529411764706,
+      "recall": 0.07894736842105263,
+      "f1": 0.08333333333333334
+    },
+    {
+      "quantile": 0.8799999999999999,
+      "tp": 1,
+      "fp": 30,
+      "fn": 37,
+      "precision": 0.03225806451612903,
+      "recall": 0.02631578947368421,
+      "f1": 0.02898550724637681
+    },
+    {
+      "quantile": 0.8999999999999999,
+      "tp": 1,
+      "fp": 26,
+      "fn": 37,
+      "precision": 0.037037037037037035,
+      "recall": 0.02631578947368421,
+      "f1": 0.03076923076923077
+    },
+    {
+      "quantile": 0.9199999999999999,
+      "tp": 1,
+      "fp": 23,
+      "fn": 37,
+      "precision": 0.041666666666666664,
+      "recall": 0.02631578947368421,
+      "f1": 0.03225806451612904
+    },
+    {
+      "quantile": 0.94,
+      "tp": 1,
+      "fp": 21,
+      "fn": 37,
+      "precision": 0.045454545454545456,
+      "recall": 0.02631578947368421,
+      "f1": 0.03333333333333333
+    },
+    {
+      "quantile": 0.96,
+      "tp": 0,
+      "fp": 16,
+      "fn": 38,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "quantile": 0.98,
+      "tp": 0,
+      "fp": 11,
+      "fn": 38,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    }
+  ],
+  "best_boundary_result": {
+    "quantile": 0.82,
+    "tp": 7,
+    "fp": 36,
+    "fn": 31,
+    "precision": 0.16279069767441862,
+    "recall": 0.18421052631578946,
+    "f1": 0.17283950617283952
+  }
+}

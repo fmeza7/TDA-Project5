@@ -116,6 +116,8 @@ La adaptacion a Breakfast mantiene la parte TDA del repo y reemplaza el bloque k
 python -m pipeline.pipeline2_tda_dl.breakfast_manifest_builder \
   --videos_dir data/breakfast/videos \
   --annotations_dir data/breakfast/annotations \
+  --camera_folders cam01 \
+  --annotation_suffixes .labels,.txt \
   --output_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json
 
 python -m pipeline.pipeline2_tda_dl.breakfast_cubical_preprocessing \
@@ -132,7 +134,8 @@ python -m pipeline.pipeline2_tda_dl.build_frame_labels \
   --dataset_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json \
   --cubical_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/outputs_cubical/manifest_cubical.json \
   --output_dir pipeline/pipeline2_tda_dl/artifacts_breakfast/frame_labels \
-  --train_split_names train
+  --train_split_names train \
+  --time_units frames
 
 python -m pipeline.pipeline2_tda_dl.breakfast_temporal_windows \
   --cubical_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/outputs_cubical/manifest_cubical.json \
@@ -176,3 +179,6 @@ Notas de protocolo:
 - `label_map.json` se construye solo con labels de `train` para evitar leakage de test.
 - El split debe ser por `subject_id` (no por ventanas).
 - `valid_mask` se guarda desde el inicio para soportar padding/batches variables en la etapa de modelado temporal.
+- Si el dataset usa archivos como `P08_juice.avi.labels`, pasar `--annotation_suffixes .labels,.txt`.
+- Si solo quieren una vista de camara, usar `--camera_folders cam01` o el nombre de carpeta que corresponda.
+- Para Breakfast es comun que las anotaciones vengan en indices de frame; en ese caso usar `--time_units frames`.

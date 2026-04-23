@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List
 
 
 VIDEO_EXTENSIONS = {".avi", ".mp4", ".mov", ".mkv", ".mpeg", ".mpg"}
+DEFAULT_ANNOTATION_SUFFIXES = [".labels", ".txt"]
 KNOWN_ACTIVITIES = [
     "coffee",
     "orange juice",
@@ -36,6 +37,18 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=",".join(KNOWN_ACTIVITIES),
         help="Lista de actividades separada por coma",
+    )
+    parser.add_argument(
+        "--camera_folders",
+        type=str,
+        default="",
+        help="Filtrar videos por nombre de carpeta padre, separado por coma (ej: cam01)",
+    )
+    parser.add_argument(
+        "--annotation_suffixes",
+        type=str,
+        default=",".join(DEFAULT_ANNOTATION_SUFFIXES),
+        help="Sufijos de anotaciones aceptados, separados por coma (ej: .labels,.txt)",
     )
     parser.add_argument(
         "--train_subjects",
@@ -67,6 +80,10 @@ def _split_tokens(value: str) -> List[str]:
     return [x for x in re.split(r"[^A-Za-z0-9]+", value) if x]
 
 
+def _csv_tokens(value: str) -> List[str]:
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
 def _normalize_subject(value: str) -> str:
     token = value.strip().upper()
     if re.fullmatch(r"P\d{2,3}", token):
@@ -74,10 +91,34 @@ def _normalize_subject(value: str) -> str:
     return ""
 
 
-def iter_video_files(root: Path) -> Iterable[Path]:
+def _is_camera_folder(value: str) -> bool:
+    token = value.strip().lower()
+    return bool(re.fullmatch(r"(cam\d+|stereo|webcam\d*|ch\d+)", token))
+
+
+def _camera_folders(csv_value: str) -> set[str]:
+    return {token.lower() for token in _csv_tokens(csv_value)}
+
+
+def _annotation_suffix_list(csv_value: str) -> List[str]:
+    suffixes: List[str] = []
+    for raw in _csv_tokens(csv_value):
+        token = raw.lower()
+        if not token.startswith("."):
+            token = "." + token
+        suffixes.append(token)
+    return sorted(set(suffixes), key=len, reverse=True)
+
+
+def iter_video_files(root: Path, camera_folders: set[str]) -> Iterable[Path]:
     for path in sorted(root.rglob("*")):
-        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS:
-            yield path
+        if not path.is_file() or path.suffix.lower() not in VIDEO_EXTENSIONS:
+            continue
+        if camera_folders and not any(
+            parent.name.strip().lower() in camera_folders for parent in path.parents
+        ):
+            continue
+        yield path
 
 
 def _subject_from_path(path: Path) -> str:
@@ -109,21 +150,69 @@ def _activity_from_path(path: Path, activities: List[str]) -> str:
         if _normalize_text(activity) in normalized:
             return activity
 
+    stem_tokens = []
+    for token in _split_tokens(path.stem):
+        if _normalize_subject(token):
+            continue
+        if _is_camera_folder(token) or re.fullmatch(r"ch\d+", token.lower()):
+            continue
+        stem_tokens.append(token.lower())
+    if stem_tokens:
+        return " ".join(stem_tokens)
+
     parent_name = path.parent.name.strip()
-    if parent_name and not re.fullmatch(r"P\d{2,3}", parent_name):
+    if (
+        parent_name
+        and not re.fullmatch(r"P\d{2,3}", parent_name)
+        and not _is_camera_folder(parent_name)
+    ):
         return parent_name
     return ""
 
 
-def _annotation_index(annotations_dir: Path) -> Dict[str, List[Path]]:
+def _strip_annotation_suffix(
+    filename: str, annotation_suffixes: List[str]
+) -> str:
+    lower = filename.lower()
+    for suffix in annotation_suffixes:
+        if lower.endswith(suffix):
+            return filename[: len(filename) - len(suffix)]
+    return Path(filename).stem
+
+
+def _annotation_index(
+    annotations_dir: Path, annotation_suffixes: List[str]
+) -> Dict[str, List[Path]]:
     index: Dict[str, List[Path]] = {}
-    for ann in sorted(annotations_dir.rglob("*.txt")):
-        key = _normalize_text(ann.stem)
+    for ann in sorted(annotations_dir.rglob("*")):
+        if not ann.is_file():
+            continue
+        if not any(ann.name.lower().endswith(suffix) for suffix in annotation_suffixes):
+            continue
+        key = _normalize_text(_strip_annotation_suffix(ann.name, annotation_suffixes))
         index.setdefault(key, []).append(ann)
     return index
 
 
-def find_annotation(video_path: Path, ann_index: Dict[str, List[Path]]) -> Path | None:
+def _find_sibling_annotation(
+    video_path: Path, annotation_suffixes: List[str]
+) -> Path | None:
+    for suffix in annotation_suffixes:
+        candidate = video_path.with_name(video_path.name + suffix)
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
+
+
+def find_annotation(
+    video_path: Path,
+    ann_index: Dict[str, List[Path]],
+    annotation_suffixes: List[str],
+) -> Path | None:
+    sibling = _find_sibling_annotation(video_path, annotation_suffixes)
+    if sibling is not None:
+        return sibling
+
     video_key = _normalize_text(video_path.stem)
     exact = ann_index.get(video_key, [])
     if len(exact) == 1:
@@ -204,15 +293,17 @@ def build_manifest(
     default_split: str,
     activities: List[str],
     strict_annotations: bool,
+    camera_folders: set[str],
+    annotation_suffixes: List[str],
 ) -> List[Dict]:
-    ann_index = _annotation_index(annotations_dir)
+    ann_index = _annotation_index(annotations_dir, annotation_suffixes)
     rows: List[Dict] = []
     missing_annotations = 0
 
-    for video_path in iter_video_files(videos_dir):
+    for video_path in iter_video_files(videos_dir, camera_folders):
         subject_id = _subject_from_path(video_path)
         split = split_mapping.get(subject_id, default_split)
-        annotation = find_annotation(video_path, ann_index)
+        annotation = find_annotation(video_path, ann_index, annotation_suffixes)
         if annotation is None:
             missing_annotations += 1
             if strict_annotations:
@@ -283,6 +374,8 @@ def main() -> None:
     split_mapping = _override_split_mapping(split_mapping, "test", args.test_subjects)
 
     activities = [x.strip() for x in args.activities.split(",") if x.strip()]
+    camera_folders = _camera_folders(args.camera_folders)
+    annotation_suffixes = _annotation_suffix_list(args.annotation_suffixes)
     rows = build_manifest(
         videos_dir=args.videos_dir,
         annotations_dir=args.annotations_dir,
@@ -290,6 +383,8 @@ def main() -> None:
         default_split=args.default_split,
         activities=activities,
         strict_annotations=args.strict_annotations,
+        camera_folders=camera_folders,
+        annotation_suffixes=annotation_suffixes,
     )
 
     write_manifest(args.output_manifest, rows)

@@ -1,0 +1,281 @@
+{
+  "config": {
+    "split": "test",
+    "max_videos": 8,
+    "activities": [
+      "cereals",
+      "coffee",
+      "pancakes",
+      "tea"
+    ],
+    "boundary_tolerance_sec": 0.5,
+    "smooth_window": 5
+  },
+  "num_videos_loaded": 8,
+  "videos": [
+    {
+      "video_id": "P06_cereals",
+      "split": "test",
+      "activity_label": "cereals",
+      "subject_id": "P06",
+      "num_frames": 100,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P06_coffee",
+      "split": "test",
+      "activity_label": "coffee",
+      "subject_id": "P06",
+      "num_frames": 95,
+      "num_gt_segments": 5
+    },
+    {
+      "video_id": "P06_pancake",
+      "split": "test",
+      "activity_label": "pancakes",
+      "subject_id": "P06",
+      "num_frames": 997,
+      "num_gt_segments": 9
+    },
+    {
+      "video_id": "P06_tea",
+      "split": "test",
+      "activity_label": "tea",
+      "subject_id": "P06",
+      "num_frames": 103,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P12_cereals",
+      "split": "test",
+      "activity_label": "cereals",
+      "subject_id": "P12",
+      "num_frames": 130,
+      "num_gt_segments": 6
+    },
+    {
+      "video_id": "P12_coffee",
+      "split": "test",
+      "activity_label": "coffee",
+      "subject_id": "P12",
+      "num_frames": 43,
+      "num_gt_segments": 2
+    },
+    {
+      "video_id": "P12_pancake",
+      "split": "test",
+      "activity_label": "pancakes",
+      "subject_id": "P12",
+      "num_frames": 574,
+      "num_gt_segments": 9
+    },
+    {
+      "video_id": "P12_tea",
+      "split": "test",
+      "activity_label": "tea",
+      "subject_id": "P12",
+      "num_frames": 53,
+      "num_gt_segments": 5
+    }
+  ],
+  "boundary_grid_results": [
+    {
+      "quantile": 0.7,
+      "tp": 15,
+      "fp": 85,
+      "fn": 25,
+      "precision": 0.15,
+      "recall": 0.375,
+      "f1": 0.21428571428571425
+    },
+    {
+      "quantile": 0.72,
+      "tp": 15,
+      "fp": 80,
+      "fn": 25,
+      "precision": 0.15789473684210525,
+      "recall": 0.375,
+      "f1": 0.22222222222222218
+    },
+    {
+      "quantile": 0.74,
+      "tp": 15,
+      "fp": 74,
+      "fn": 25,
+      "precision": 0.16853932584269662,
+      "recall": 0.375,
+      "f1": 0.23255813953488375
+    },
+    {
+      "quantile": 0.76,
+      "tp": 15,
+      "fp": 72,
+      "fn": 25,
+      "precision": 0.1724137931034483,
+      "recall": 0.375,
+      "f1": 0.2362204724409449
+    },
+    {
+      "quantile": 0.7799999999999999,
+      "tp": 14,
+      "fp": 64,
+      "fn": 26,
+      "precision": 0.1794871794871795,
+      "recall": 0.35,
+      "f1": 0.23728813559322035
+    },
+    {
+      "quantile": 0.7999999999999999,
+      "tp": 14,
+      "fp": 58,
+      "fn": 26,
+      "precision": 0.19444444444444445,
+      "recall": 0.35,
+      "f1": 0.25
+    },
+    {
+      "quantile": 0.82,
+      "tp": 14,
+      "fp": 53,
+      "fn": 26,
+      "precision": 0.208955223880597,
+      "recall": 0.35,
+      "f1": 0.2616822429906542
+    },
+    {
+      "quantile": 0.84,
+      "tp": 13,
+      "fp": 50,
+      "fn": 27,
+      "precision": 0.20634920634920634,
+      "recall": 0.325,
+      "f1": 0.2524271844660194
+    },
+    {
+      "quantile": 0.86,
+      "tp": 13,
+      "fp": 45,
+      "fn": 27,
+      "precision": 0.22413793103448276,
+      "recall": 0.325,
+      "f1": 0.2653061224489796
+    },
+    {
+      "quantile": 0.8799999999999999,
+      "tp": 13,
+      "fp": 34,
+      "fn": 27,
+      "precision": 0.2765957446808511,
+      "recall": 0.325,
+      "f1": 0.2988505747126437
+    },
+    {
+      "quantile": 0.8999999999999999,
+      "tp": 12,
+      "fp": 33,
+      "fn": 28,
+      "precision": 0.26666666666666666,
+      "recall": 0.3,
+      "f1": 0.2823529411764706
+    },
+    {
+      "quantile": 0.9199999999999999,
+      "tp": 11,
+      "fp": 28,
+      "fn": 29,
+      "precision": 0.28205128205128205,
+      "recall": 0.275,
+      "f1": 0.27848101265822783
+    },
+    {
+      "quantile": 0.94,
+      "tp": 10,
+      "fp": 24,
+      "fn": 30,
+      "precision": 0.29411764705882354,
+      "recall": 0.25,
+      "f1": 0.27027027027027023
+    },
+    {
+      "quantile": 0.96,
+      "tp": 7,
+      "fp": 18,
+      "fn": 33,
+      "precision": 0.28,
+      "recall": 0.175,
+      "f1": 0.2153846153846154
+    },
+    {
+      "quantile": 0.98,
+      "tp": 5,
+      "fp": 13,
+      "fn": 35,
+      "precision": 0.2777777777777778,
+      "recall": 0.125,
+      "f1": 0.1724137931034483
+    }
+  ],
+  "best_boundary_result": {
+    "quantile": 0.8799999999999999,
+    "tp": 13,
+    "fp": 34,
+    "fn": 27,
+    "precision": 0.2765957446808511,
+    "recall": 0.325,
+    "f1": 0.2988505747126437
+  },
+  "top_descriptors_by_fisher": [
+    {
+      "descriptor": "h1_count",
+      "fisher_score": 0.43392810225486755
+    },
+    {
+      "descriptor": "brightness_delta",
+      "fisher_score": 0.37723031640052795
+    },
+    {
+      "descriptor": "pi_h0_energy",
+      "fisher_score": 0.354181170463562
+    },
+    {
+      "descriptor": "brightness_mean",
+      "fisher_score": 0.29799288511276245
+    },
+    {
+      "descriptor": "h0_sum_persistence",
+      "fisher_score": 0.2944931387901306
+    },
+    {
+      "descriptor": "combined_activity",
+      "fisher_score": 0.29004696011543274
+    },
+    {
+      "descriptor": "pi_h1_energy",
+      "fisher_score": 0.28987619280815125
+    },
+    {
+      "descriptor": "h0_std_persistence",
+      "fisher_score": 0.2879692316055298
+    },
+    {
+      "descriptor": "h0_count",
+      "fisher_score": 0.2857024371623993
+    },
+    {
+      "descriptor": "brightness_std",
+      "fisher_score": 0.2748798131942749
+    },
+    {
+      "descriptor": "h1_sum_persistence",
+      "fisher_score": 0.2745600938796997
+    },
+    {
+      "descriptor": "h0_max_persistence",
+      "fisher_score": 0.26659584045410156
+    }
+  ],
+  "pca_explained_variance_ratio": [
+    0.9800848960876465,
+    0.015697717666625977
+  ]
+}
