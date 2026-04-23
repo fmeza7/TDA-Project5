@@ -1,115 +1,20 @@
-# Pipeline 2 – TDA → DL (Topological Autoencoder + Temporal Transformer)
+# Pipeline 2 - Breakfast Actions (TDA + DL)
 
-Este pipeline complementario reutiliza los artefactos del pipeline original (1) y agrega una etapa profunda basada en embeddings topológicos y clasificación temporal. **No** modifica ningún archivo existente; todo vive dentro de `pipeline/pipeline2_tda_dl/`.
+Esta carpeta documenta solo el flujo de `pipeline 2` para segmentacion temporal frame-level en Breakfast actions.
 
-## Flujo completo
+## Objetivo
 
-1. `window_dataset.py`: genera ventanas temporales de las curvas topológicas (`pipeline/feature_extraction/outputs_curves/`). Produce conjuntos para el TopoAE y para la etapa supervisada.
-2. `train_topoae.py`: entrena un Topological Autoencoder (TopoAE) con pérdida de reconstrucción + pérdida topológica 0D basada en MST.
-3. `export_latents.py`: infiere el TopoAE sobre todas las ventanas y guarda latentes alineados temporalmente.
-4. `train_temporal_model.py`: construye secuencias de latentes y entrena un Transformer temporal con supervisión por clase (background + comerciales).
-5. `infer_temporal_model.py`: infiere el modelo temporal sobre los latentes de TV, agrupa predicciones, aplica postprocesamiento y emite detecciones compatibles con `evaluar-v2.py`.
-6. `evaluar-v2.py detecciones_tda_dl.txt gt.txt`: evalúa exactamente igual que el pipeline original.
+Predecir action units por frame a partir de descriptores topologicos, manteniendo reproducibilidad de datos, splits y entrenamiento.
 
-## Entradas
-- `pipeline/feature_extraction/outputs_curves/{tv,commercials}/*.npz`
-- `pipeline/feature_extraction/outputs_curves/manifest_curves.json`
-- `pipeline/preprocessing/outputs_cubical/manifest.json`
-- `gt.txt`
+## Contrato de reproducibilidad
 
-## Artefactos principales
-```
-pipeline/pipeline2_tda_dl/artifacts/
-  window_data/
-    topoae_dataset.npz
-    temporal_dataset.npz
-  topoae/
-    topoae_best.pt
-    scaler_mean.npy
-    scaler_std.npy
-    topoae_config.json
-  latents/
-    tv/*.npz
-    commercials/*.npz
-    manifest_latents.json
-  temporal_model/
-    temporal_best.pt
-    class_map.json
-    temporal_config.json
-  detections/
-    detecciones_tda_dl.txt
-```
+- Split explicito por `subject_id` usando `--split_file`.
+- ID estable por muestra: `sample_id = split__subject_id__video_id`.
+- Validaciones estrictas para faltantes, colisiones y desalineaciones.
+- Rutas relativas en manifests para facilitar portabilidad del workspace.
+- Metadata de ejecucion por etapa (`*_metadata.json`).
 
-## Comandos de referencia
-
-```bash
-python -m pipeline.pipeline2_tda_dl.window_dataset \
-  --curves_dir pipeline/feature_extraction/outputs_curves \
-  --preproc_manifest pipeline/preprocessing/outputs_cubical/manifest.json \
-  --gt gt.txt \
-  --output_dir pipeline/pipeline2_tda_dl/artifacts/window_data \
-  --window_sec 8.0 \
-  --stride_frames 1 \
-  --positive_overlap 0.5 \
-  --negative_overlap 0.1
-
-python -m pipeline.pipeline2_tda_dl.train_topoae \
-  --window_data pipeline/pipeline2_tda_dl/artifacts/window_data/topoae_dataset.npz \
-  --output_dir pipeline/pipeline2_tda_dl/artifacts/topoae \
-  --latent_dim 32 \
-  --lambda_topo 0.5 \
-  --batch_size 64 \
-  --lr 1e-3 \
-  --epochs 100
-
-python -m pipeline.pipeline2_tda_dl.export_latents \
-  --window_data pipeline/pipeline2_tda_dl/artifacts/window_data/temporal_dataset.npz \
-  --topoae_dir pipeline/pipeline2_tda_dl/artifacts/topoae \
-  --output_dir pipeline/pipeline2_tda_dl/artifacts/latents
-
-python -m pipeline.pipeline2_tda_dl.train_temporal_model \
-  --latents_dir pipeline/pipeline2_tda_dl/artifacts/latents \
-  --output_dir pipeline/pipeline2_tda_dl/artifacts/temporal_model \
-  --seq_len 9 \
-  --batch_size 64 \
-  --lr 1e-4 \
-  --epochs 50
-
-python -m pipeline.pipeline2_tda_dl.infer_temporal_model \
-  --latents_dir pipeline/pipeline2_tda_dl/artifacts/latents \
-  --temporal_model_dir pipeline/pipeline2_tda_dl/artifacts/temporal_model \
-  --preproc_manifest pipeline/preprocessing/outputs_cubical/manifest.json \
-  --output pipeline/pipeline2_tda_dl/artifacts/detections/detecciones_tda_dl.txt \
-  --score_threshold 0.6 \
-  --merge_gap_sec 2.0 \
-  --min_segment_sec 3.0
-
-python evaluar-v2.py pipeline/pipeline2_tda_dl/artifacts/detecciones/detecciones_tda_dl.txt gt.txt
-```
-
-## Dependencias
-- PyTorch >= 2.0
-- NumPy, SciPy (para MST), scikit-learn
-- tqdm / rich opcional para barras de progreso
-
-> Nota: este pipeline es independiente del pipeline de k-NN original. Ambos pueden convivir y producir detecciones paralelas.
-
-## Adaptacion Breakfast (action units frame-level)
-
-La adaptacion a Breakfast mantiene la parte TDA del repo y reemplaza el bloque k-NN por supervision temporal frame-level.
-
-## Ejecucion reproducible recomendada
-
-La ruta recomendada es ejecutar las etapas secuencialmente y guardar todo en `pipeline/pipeline2_tda_dl/artifacts_breakfast/`.
-
-## Contrato del dataset Breakfast
-
-- El split debe definirse explícitamente por `subject_id` en `--split_file`.
-- Cada muestra usa una clave estable `sample_id = split__subject_id__video_id`.
-- El matching de anotaciones es exacto por defecto; el modo difuso queda deshabilitado salvo que se pida explícitamente.
-- El pipeline falla si faltan splits esperados, si hay colisiones de IDs o si una etapa encuentra artefactos inconsistentes.
-
-Ejemplo mínimo de `splits.json`:
+Ejemplo minimo de `splits.json`:
 
 ```json
 {
@@ -120,19 +25,19 @@ Ejemplo mínimo de `splits.json`:
 }
 ```
 
-### Flujo recomendado
+## Etapas del flujo Breakfast
 
-1. `breakfast_manifest_builder.py`: crea un manifest con `video_id`, `subject_id`, `activity_label`, `split`, `annotation_path`.
-2. `breakfast_cubical_preprocessing.py`: extrae `tda_features` y `timestamps_sec` por video usando el motor cubical existente.
-3. `breakfast_curves.py`: genera `curve_signals` por video/split.
-4. `build_frame_labels.py`: alinea anotaciones temporales a `timestamps_sec` y crea `frame_label_ids`.
-5. `breakfast_temporal_windows.py`: empaqueta ventanas many-to-many (`X`, `y`, `valid_mask`) para entrenamiento temporal.
-6. `train_breakfast_temporal_segmenter.py`: entrena un BiLSTM many-to-many sobre las ventanas.
-7. `infer_breakfast_temporal_segmenter.py`: reconstruye predicciones frame-level por video (promedio de logits en ventanas solapadas).
-8. `decode_breakfast_predictions.py`: suaviza y limpia la secuencia temporal (mode filter + merge de segmentos cortos).
-9. `eval_breakfast_segmentation.py`: evalua `frame_accuracy`, `edit_score`, `F1@10/25/50`.
+1. `breakfast_manifest_builder.py`
+2. `breakfast_cubical_preprocessing.py`
+3. `breakfast_curves.py`
+4. `build_frame_labels.py`
+5. `breakfast_temporal_windows.py`
+6. `train_breakfast_temporal_segmenter.py`
+7. `infer_breakfast_temporal_segmenter.py`
+8. `decode_breakfast_predictions.py`
+9. `eval_breakfast_segmentation.py`
 
-### Comandos base
+## Ejecucion recomendada
 
 ```bash
 python -m pipeline.pipeline2_tda_dl.breakfast_manifest_builder \
@@ -197,9 +102,8 @@ python -m pipeline.pipeline2_tda_dl.eval_breakfast_segmentation \
   --output_json pipeline/pipeline2_tda_dl/artifacts_breakfast/eval/eval_test.json
 ```
 
-Notas de protocolo:
-- `label_map.json` se construye solo con labels de `train` para evitar leakage de test.
-- El split debe ser por `subject_id` (no por ventanas).
-- `valid_mask` se guarda desde el inicio para soportar padding/batches variables en la etapa de modelado temporal.
-- `strict_alignment`, `strict_missing_predictions` y `fail_on_uncovered` quedan activados por defecto.
-- Las rutas embebidas en manifests se guardan relativas para que los artefactos puedan moverse junto al repo.
+## Notas
+
+- `label_map.json` se construye solo con labels de `train`.
+- `strict_alignment`, `strict_missing_predictions` y `fail_on_uncovered` quedan activos por defecto.
+- Los manifests guardan rutas relativas para mover artefactos sin romper referencias.

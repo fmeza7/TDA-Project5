@@ -1,5 +1,10 @@
 # Pipeline TDA + k‑NN para detección de comerciales
 
+## Nota de rama
+
+La rama de trabajo para Breakfast actions se concentra en `pipeline/pipeline2_tda_dl/`.
+La guía operativa de ese flujo está en `pipeline/pipeline2_tda_dl/README_pipeline2.md`.
+
 Este directorio contiene la implementación modular del pipeline utilizado para detectar comerciales en las transmisiones de televisión usando topological data analysis (TDA) como señal de anomalía y búsqueda por similitud k‑NN para asignar cada ventana a un comercial específico. A continuación se describe cada etapa, los comandos principales y el mejor resultado obtenido hasta ahora.
 
 ## 1. Preprocesamiento (pipeline/preprocessing)
