@@ -1,31 +1,8 @@
 # Pipeline 2 - Breakfast Actions (TDA + DL)
 
-Esta carpeta documenta solo el flujo de `pipeline 2` para segmentacion temporal frame-level en Breakfast actions.
+Esta carpeta contiene el flujo de `pipeline 2` para segmentacion temporal de acciones.
 
-## Objetivo
-
-Predecir action units por frame a partir de descriptores topologicos, manteniendo reproducibilidad de datos, splits y entrenamiento.
-
-## Contrato de reproducibilidad
-
-- Split explicito por `subject_id` usando `--split_file`.
-- ID estable por muestra: `sample_id = split__subject_id__video_id`.
-- Validaciones estrictas para faltantes, colisiones y desalineaciones.
-- Rutas relativas en manifests para facilitar portabilidad del workspace.
-- Metadata de ejecucion por etapa (`*_metadata.json`).
-
-Ejemplo minimo de `splits.json`:
-
-```json
-{
-  "P03": "train",
-  "P04": "train",
-  "P16": "val",
-  "P28": "test"
-}
-```
-
-## Etapas del flujo Breakfast
+## 1. Flujo
 
 1. `breakfast_manifest_builder.py`
 2. `breakfast_cubical_preprocessing.py`
@@ -37,18 +14,44 @@ Ejemplo minimo de `splits.json`:
 8. `decode_breakfast_predictions.py`
 9. `eval_breakfast_segmentation.py`
 
-Playbook en Jupyter:
+Notebook:
 
 - `pipeline/pipeline2_tda_dl/experiments/breakfast_actions_playbook.ipynb`
 
-## Ejecucion recomendada
+## 2. Comando recomendado
+
+Para correr todo el flujo desde PowerShell:
+
+```powershell
+cd "C:\ruta\al\repo\TDA-Project5"
+
+powershell -ExecutionPolicy Bypass -File .\scripts\run_breakfast_pipeline2.ps1 `
+  -VideosDir "C:\ruta\al\dataset\BreakfastII_15fps_qvga_sync\BreakfastII_15fps_qvga_sync" `
+  -AnnotationsDir "C:\ruta\al\dataset\BreakfastII_15fps_qvga_sync\BreakfastII_15fps_qvga_sync" `
+  -ArtifactsDir ".\pipeline\pipeline2_tda_dl\artifacts_breakfast_run1" `
+  -SplitFile ".\pipeline\pipeline2_tda_dl\configs\splits_52_subjects.json"
+```
+
+Por defecto este script:
+
+- usa solo videos en carpetas `cam01`
+- toma las anotaciones como `frames`
+- guarda la salida en la carpeta indicada en `-ArtifactsDir`
+
+Archivos utiles al terminar:
+
+- modelo: `pipeline/pipeline2_tda_dl/artifacts_breakfast_run1/temporal_model/breakfast_temporal_best.pt`
+- evaluacion: `pipeline/pipeline2_tda_dl/artifacts_breakfast_run1/eval/eval_test.json`
+
+## 3. Ejecucion por etapas
 
 ```bash
 python -m pipeline.pipeline2_tda_dl.breakfast_manifest_builder \
   --videos_dir data/breakfast/videos \
   --annotations_dir data/breakfast/annotations \
   --split_file data/breakfast/splits.json \
-  --output_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json
+  --output_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json \
+  --camera_dirs cam01
 
 python -m pipeline.pipeline2_tda_dl.breakfast_cubical_preprocessing \
   --dataset_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json \
@@ -64,7 +67,8 @@ python -m pipeline.pipeline2_tda_dl.build_frame_labels \
   --dataset_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/manifest.json \
   --cubical_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/outputs_cubical/manifest_cubical.json \
   --output_dir pipeline/pipeline2_tda_dl/artifacts_breakfast/frame_labels \
-  --train_split_names train
+  --train_split_names train \
+  --time_units frames
 
 python -m pipeline.pipeline2_tda_dl.breakfast_temporal_windows \
   --cubical_manifest pipeline/pipeline2_tda_dl/artifacts_breakfast/outputs_cubical/manifest_cubical.json \
@@ -106,8 +110,28 @@ python -m pipeline.pipeline2_tda_dl.eval_breakfast_segmentation \
   --output_json pipeline/pipeline2_tda_dl/artifacts_breakfast/eval/eval_test.json
 ```
 
-## Notas
+## 4. Split
+
+Ejemplo minimo de `splits.json`:
+
+```json
+{
+  "P03": "train",
+  "P04": "train",
+  "P16": "val",
+  "P28": "test"
+}
+```
+
+Split base para 52 sujetos:
+
+- `pipeline/pipeline2_tda_dl/configs/splits_52_subjects.json`
+
+## 5. Notas
 
 - `label_map.json` se construye solo con labels de `train`.
-- `strict_alignment`, `strict_missing_predictions` y `fail_on_uncovered` quedan activos por defecto.
-- Los manifests guardan rutas relativas para mover artefactos sin romper referencias.
+- El manifest builder acepta anotaciones `.txt` y `.labels`.
+- Si hay varias anotaciones para un mismo video, se toma la que corresponde a la misma vista del video, por ejemplo `cam01`.
+- El parser de anotaciones soporta `start end label`, formato tabulado y rangos como `1-135 crack_egg`.
+- Si las anotaciones estan en segundos, cambia `--time_units frames` por `--time_units seconds`.
+- Algunos `.avi` pueden mostrar warnings del decodificador `ffmpeg`. Si el proceso sigue y los archivos de salida se generan bien, en general no debiesen impedir correr el pipeline.

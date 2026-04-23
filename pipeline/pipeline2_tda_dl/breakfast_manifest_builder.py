@@ -10,6 +10,7 @@ from .repro_utils import build_sample_id, relpath_str, runtime_metadata, write_j
 
 
 VIDEO_EXTENSIONS = {".avi", ".mp4", ".mov", ".mkv", ".mpeg", ".mpg"}
+ANNOTATION_EXTENSIONS = {".txt", ".labels"}
 KNOWN_ACTIVITIES = [
     "coffee",
     "orange juice",
@@ -79,6 +80,12 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=False,
     )
+    parser.add_argument(
+        "--camera_dirs",
+        type=str,
+        default="",
+        help="Filtra videos por nombres de carpeta/camara separados por coma, p.ej. cam01",
+    )
     parser.add_argument("--metadata_out", type=Path, default=None)
     return parser.parse_args()
 
@@ -96,6 +103,19 @@ def _normalize_subject(value: str) -> str:
     if re.fullmatch(r"P\d{2,3}", token):
         return token
     return ""
+
+
+def _strip_known_suffixes(path: Path) -> str:
+    name = path.name
+    suffixes = [suffix.lower() for suffix in path.suffixes]
+    while suffixes:
+        last_suffix = suffixes[-1]
+        if last_suffix in ANNOTATION_EXTENSIONS or last_suffix in VIDEO_EXTENSIONS:
+            name = name[: -len(last_suffix)]
+            suffixes.pop()
+            continue
+        break
+    return name
 
 
 def iter_video_files(root: Path) -> Iterable[Path]:
@@ -141,10 +161,80 @@ def _activity_from_path(path: Path, activities: List[str]) -> str:
 
 def _annotation_index(annotations_dir: Path) -> Dict[str, List[Path]]:
     index: Dict[str, List[Path]] = {}
-    for ann in sorted(annotations_dir.rglob("*.txt")):
-        key = _normalize_text(ann.stem)
-        index.setdefault(key, []).append(ann)
+    for ann in sorted(annotations_dir.rglob("*")):
+        if not ann.is_file() or ann.suffix.lower() not in ANNOTATION_EXTENSIONS:
+            continue
+        keys = {
+            _normalize_text(ann.stem),
+            _normalize_text(_strip_known_suffixes(ann)),
+        }
+        for key in sorted(k for k in keys if k):
+            index.setdefault(key, []).append(ann)
     return index
+
+
+def _camera_filter(camera_dirs_csv: str) -> set[str]:
+    return {token.strip().lower() for token in camera_dirs_csv.split(",") if token.strip()}
+
+
+def _matches_camera_filter(path: Path, camera_filter: set[str]) -> bool:
+    if not camera_filter:
+        return True
+    parent_names = {parent.name.strip().lower() for parent in path.parents if parent.name}
+    return not camera_filter.isdisjoint(parent_names)
+
+
+def _shared_parent_suffix_len(video_path: Path, candidate: Path) -> int:
+    video_parts = [parent.name.strip().lower() for parent in video_path.parents if parent.name]
+    candidate_parts = [parent.name.strip().lower() for parent in candidate.parents if parent.name]
+    score = 0
+    for video_part, candidate_part in zip(video_parts, candidate_parts):
+        if video_part != candidate_part:
+            break
+        score += 1
+    return score
+
+
+def _disambiguate_annotation_candidates(
+    video_path: Path, candidates: List[Path]
+) -> Path:
+    if len(candidates) == 1:
+        return candidates[0]
+
+    video_parent = video_path.parent.name.strip().lower()
+    video_subject = _subject_from_path(video_path)
+
+    ranked = sorted(
+        candidates,
+        key=lambda candidate: (
+            candidate.parent.name.strip().lower() == video_parent,
+            _shared_parent_suffix_len(video_path, candidate),
+            _subject_from_path(candidate) == video_subject,
+            len(str(candidate)),
+        ),
+        reverse=True,
+    )
+    best = ranked[0]
+    best_score = (
+        best.parent.name.strip().lower() == video_parent,
+        _shared_parent_suffix_len(video_path, best),
+        _subject_from_path(best) == video_subject,
+    )
+    ties = [
+        candidate
+        for candidate in ranked
+        if (
+            candidate.parent.name.strip().lower() == video_parent,
+            _shared_parent_suffix_len(video_path, candidate),
+            _subject_from_path(candidate) == video_subject,
+        )
+        == best_score
+    ]
+    if len(ties) > 1:
+        raise ValueError(
+            f"Multiples anotaciones ambiguas para {video_path}: {sorted(str(p) for p in ties)}"
+        )
+    return best
 
 
 def find_annotation(
@@ -155,9 +245,7 @@ def find_annotation(
     if len(exact) == 1:
         return exact[0]
     if len(exact) > 1:
-        raise ValueError(
-            f"Multiples anotaciones exactas para {video_path}: {sorted(str(p) for p in exact)}"
-        )
+        return _disambiguate_annotation_candidates(video_path, exact)
 
     if not fuzzy_match:
         return None
@@ -169,15 +257,9 @@ def find_annotation(
     if not candidates:
         return None
     unique_candidates = sorted({candidate.resolve() for candidate in candidates})
-    if len(unique_candidates) > 1:
-        raise ValueError(
-            f"Matching difuso ambiguo para {video_path}: {[str(p) for p in unique_candidates]}"
-        )
-    candidates = sorted(
-        candidates,
-        key=lambda p: (abs(len(_normalize_text(p.stem)) - len(video_key)), len(str(p))),
-    )
-    return candidates[0]
+    if len(unique_candidates) == 1:
+        return unique_candidates[0]
+    return _disambiguate_annotation_candidates(video_path, unique_candidates)
 
 
 def _expected_splits(value: str) -> set[str]:
@@ -269,6 +351,7 @@ def build_manifest(
     strict_annotations: bool,
     strict_metadata: bool,
     fuzzy_annotations: bool,
+    camera_filter: set[str],
 ) -> List[Dict]:
     ann_index = _annotation_index(annotations_dir)
     rows: List[Dict] = []
@@ -276,6 +359,8 @@ def build_manifest(
     seen_sample_ids: set[str] = set()
 
     for video_path in iter_video_files(videos_dir):
+        if not _matches_camera_filter(video_path, camera_filter):
+            continue
         subject_id = _subject_from_path(video_path)
         if not subject_id and strict_metadata:
             raise ValueError(f"No se pudo inferir subject_id para {video_path}")
@@ -318,6 +403,7 @@ def build_manifest(
             "subject_id": subject_id,
             "split": split.strip().lower(),
             "annotation_path": annotation_path,
+            "camera_id": video_path.parent.name,
         }
         rows.append(row)
 
@@ -427,6 +513,7 @@ def main() -> None:
         strict_annotations=args.strict_annotations,
         strict_metadata=args.strict_metadata,
         fuzzy_annotations=args.fuzzy_annotations,
+        camera_filter=_camera_filter(args.camera_dirs),
     )
     rows = _limit_rows_per_split(rows, args.max_videos_per_split)
     _validate_manifest(rows, expected_splits)

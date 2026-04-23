@@ -2,3 +2,12 @@
 REPORT_TDA.md
 
 /data
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Local pipeline outputs
+pipeline/pipeline2_tda_dl/artifacts_breakfast_run1/
+pipeline/pipeline2_tda_dl/artifacts_breakfast*/
+*.npz
